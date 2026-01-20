@@ -1,10 +1,12 @@
 """
-Validadores para documentos medicos
+Servico de validacao de documentos medicos
 Garante que apenas documentos medicos sejam processados
 """
 
+import json
 import anthropic
-from config import CLAUDE_MODEL
+
+from src.config import CLAUDE_MODEL
 
 
 class DocumentValidator:
@@ -66,7 +68,7 @@ TEXTO PARA ANALISE:
             )
 
             response_text = response.content[0].text
-            return self._parse_validation_response(response_text)
+            return self._parse_response(response_text)
 
         except Exception as e:
             return {
@@ -142,7 +144,7 @@ Responda APENAS com JSON no formato:
             )
 
             response_text = response.content[0].text
-            return self._parse_validation_response(response_text)
+            return self._parse_response(response_text)
 
         except Exception as e:
             return {
@@ -151,10 +153,8 @@ Responda APENAS com JSON no formato:
                 'message': f'Erro ao validar imagem: {str(e)}'
             }
 
-    def _parse_validation_response(self, response_text: str) -> dict:
+    def _parse_response(self, response_text: str) -> dict:
         """Parse da resposta JSON do validador"""
-        import json
-
         try:
             if "```json" in response_text:
                 start = response_text.find("```json") + 7
