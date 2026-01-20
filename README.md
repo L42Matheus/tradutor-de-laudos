@@ -1,222 +1,110 @@
-# 🏥 Tradutor de Laudos Médicos - MVP
+# Tradutor de Laudos Medicos
 
-Sistema simples para traduzir laudos médicos em linguagem técnica para linguagem acessível ao paciente.
+Sistema para traduzir laudos medicos em linguagem tecnica para linguagem acessivel ao paciente.
 
-## 🎯 O que faz?
+## O que faz?
 
-- ✅ Traduz laudos médicos para linguagem simples
-- ✅ Remove automaticamente dados pessoais (LGPD)
-- ✅ Explica termos técnicos
-- ✅ Não armazena nenhum dado
-- ✅ Interface web fácil de usar
+- Traduz laudos medicos para linguagem simples
+- Aceita upload de arquivos (PDF, imagens) ou texto colado
+- Le imagens de laudos usando visao computacional (Claude Vision)
+- Remove automaticamente dados pessoais (LGPD)
+- Explica termos tecnicos
+- Nao armazena nenhum dado
+- Interface web facil de usar
 
-## ⚠️ IMPORTANTE
+## IMPORTANTE
 
-**Este sistema NÃO substitui consulta médica!**  
-É apenas uma ferramenta educacional para ajudar pacientes a entenderem melhor seus exames.
+**Este sistema NAO substitui consulta medica!**
+E apenas uma ferramenta educacional para ajudar pacientes a entenderem melhor seus exames.
 
 ---
 
-## 🚀 Como instalar e rodar
+## Como Instalar e Rodar
 
-### 1. **Pré-requisitos**
+### 1. Pre-requisitos
 - Python 3.8 ou superior
 - Conta na Anthropic (para API do Claude)
 
-### 2. **Pegue sua API Key**
+### 2. Pegue sua API Key
 1. Acesse: https://console.anthropic.com/
-2. Faça login ou crie uma conta
-3. Vá em "API Keys"
+2. Faca login ou crie uma conta
+3. Va em "API Keys"
 4. Crie uma nova chave
-5. Copie a chave (começa com `sk-ant-...`)
+5. Copie a chave (comeca com `sk-ant-...`)
 
-### 3. **Instalação**
+### 3. Instalacao
 
 ```bash
-# Clone ou baixe este projeto
-cd tradutor-laudos
+git clone https://github.com/L42Matheus/tradutor-de-laudos.git
+cd tradutor-de-laudos
 
-# Crie um ambiente virtual (recomendado)
 python -m venv venv
 
-# Ative o ambiente virtual
-# No Windows:
+# Windows:
 venv\Scripts\activate
-# No Mac/Linux:
+# Mac/Linux:
 source venv/bin/activate
 
-# Instale as dependências
 pip install -r requirements.txt
 ```
 
-### 4. **Configuração**
+### 4. Configuracao
 
 ```bash
-# Copie o arquivo de exemplo
 cp .env.example .env
-
-# Edite o arquivo .env e adicione sua API key
-# No Windows: notepad .env
-# No Mac/Linux: nano .env
+# Edite o .env e adicione sua API key
 ```
 
-Cole sua API key no lugar de `sk-ant-sua-chave-aqui`
-
-### 5. **Rodar o sistema**
+### 5. Rodar
 
 ```bash
 streamlit run app.py
 ```
 
-O navegador abrirá automaticamente em `http://localhost:8501`
-
 ---
 
-## 📖 Como usar
+## Como Usar
 
-1. **Aceite os termos** de uso
-2. **Selecione o tipo de exame**
-3. **Cole o texto do laudo** na área de texto
-4. **Clique em "Traduzir Laudo"**
-5. **Veja o resultado** em 3 níveis:
+1. Aceite os termos de uso
+2. Selecione o tipo de exame
+3. Escolha como enviar o laudo:
+   - Upload de arquivo (PDF, imagem, TXT)
+   - Colar texto diretamente
+4. Clique em "Traduzir Laudo"
+5. Veja o resultado em 3 niveis:
    - Resumo simples
-   - Explicação detalhada
-   - Glossário de termos
+   - Explicacao detalhada
+   - Glossario de termos
 
 ---
 
-## 🔒 Privacidade e Segurança
-
-### Dados Removidos Automaticamente:
-- ✅ CPF
-- ✅ RG
-- ✅ Nomes
-- ✅ Telefones
-- ✅ Emails
-- ✅ Endereços
-- ✅ Datas de nascimento
-
-### Como funciona:
-1. Você cola o laudo
-2. Sistema remove dados pessoais
-3. Envia para API apenas texto médico
-4. Nada é armazenado
-5. Dados descartados após uso
-
----
-
-## 💰 Custos
-
-### API do Claude:
-- **Modelo usado**: Claude Sonnet 4
-- **Custo médio**: ~$0.003 por laudo (menos de 1 centavo)
-- **Com $5 de crédito**: ~1.600 laudos
-
-### Onde adicionar créditos:
-https://console.anthropic.com/settings/billing
-
----
-
-## 🛠️ Estrutura do Projeto
+## Estrutura do Projeto
 
 ```
 tradutor-laudos/
-│
 ├── app.py              # Interface Streamlit
-├── translator.py       # Lógica de tradução com Claude
+├── translator.py       # Logica de traducao com Claude
+├── file_reader.py      # Processamento de arquivos
 ├── anonymizer.py       # Remove dados pessoais
-├── prompts.py          # Prompts otimizados por tipo
-├── requirements.txt    # Dependências
-├── .env.example        # Template de configuração
-└── README.md          # Este arquivo
+├── prompts.py          # Prompts por tipo de exame
+├── requirements.txt    # Dependencias
+├── .env.example        # Template de configuracao
+└── docs/               # Documentacao adicional
+    ├── TECNOLOGIAS.md
+    ├── MELHORIAS.md
+    └── FEATURES.md
 ```
 
 ---
 
-## 🚀 Próximos Passos (Validação)
+## Documentacao
 
-### Para testar com usuários reais:
-
-1. **Validação com amigos/família**
-   - Peça laudos antigos (anonimize manualmente se necessário)
-   - Teste diferentes tipos de exames
-   - Colete feedback sobre clareza
-
-2. **Feedback de médicos**
-   - Mostre as traduções para médicos conhecidos
-   - Pergunte se as explicações estão corretas
-   - Ajuste prompts baseado no feedback
-
-3. **Métricas a observar**
-   - Paciente entendeu melhor o exame?
-   - Gerou dúvidas novas?
-   - Ficou mais ou menos ansioso?
-   - Conseguiu fazer perguntas melhores ao médico?
+- [Tecnologias Utilizadas](docs/TECNOLOGIAS.md)
+- [Melhorias de Layout](docs/MELHORIAS.md)
+- [Novas Features Planejadas](docs/FEATURES.md)
 
 ---
 
-## 📋 Deploy (Futuro)
+## Licenca
 
-### Opções gratuitas:
-- **Streamlit Cloud**: Deploy gratuito direto do GitHub
-- **Render**: Plano gratuito com Python
-- **Railway**: Horas gratuitas por mês
-
-### Para escalar:
-- Considere cache de respostas comuns
-- Monitore custos da API
-- Implemente rate limiting
-
----
-
-## ⚖️ Aspectos Legais
-
-### LGPD:
-✅ Não armazena dados  
-✅ Anonimização automática  
-✅ Termo de consentimento  
-✅ Processamento temporário  
-
-### Responsabilidade:
-- Sistema é educacional
-- Não faz diagnósticos
-- Não substitui médico
-- Usuário assume responsabilidade pelo uso
-
----
-
-## 🤝 Contribuindo
-
-Sugestões de melhoria:
-1. Fork o projeto
-2. Crie uma branch (`git checkout -b melhoria-xyz`)
-3. Commit suas mudanças (`git commit -am 'Adiciona xyz'`)
-4. Push para a branch (`git push origin melhoria-xyz`)
-5. Abra um Pull Request
-
----
-
-## 📞 Suporte
-
-Problemas? Dúvidas?
-1. Verifique se a API key está correta
-2. Confirme que tem créditos na conta Anthropic
-3. Teste com um laudo simples primeiro
-4. Cheque os logs de erro no terminal
-
----
-
-## 📄 Licença
-
-MIT License - use livremente, mas sem garantias.
-
----
-
-## ✨ Créditos
-
-Desenvolvido com:
-- Streamlit (interface)
-- Claude API (tradução)
-- Python (backend)
-
-**Feito para ajudar pessoas a entenderem melhor sua saúde! 🏥❤️**
+MIT License
