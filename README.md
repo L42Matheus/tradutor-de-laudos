@@ -15,7 +15,7 @@ Sistema para traduzir laudos e receitas médicas em linguagem técnica para ling
 ## IMPORTANTE
 
 **Este sistema NAO substitui consulta medica!**
-E apenas uma ferramenta educacional para ajudar pacientes a entenderem melhor seus exames.
+E apenas uma ferramenta para ajudar pacientes a entenderem melhor seus exames.
 
 ---
 
