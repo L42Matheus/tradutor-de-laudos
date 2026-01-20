@@ -1,0 +1,151 @@
+import base64
+from io import BytesIO
+from PyPDF2 import PdfReader
+
+
+def read_text_file(uploaded_file):
+    """
+    Lê arquivo de texto (.txt)
+
+    Args:
+        uploaded_file: Arquivo do Streamlit file_uploader
+
+    Returns:
+        str: Conteúdo do arquivo
+    """
+    try:
+        content = uploaded_file.read().decode('utf-8')
+        return content, None
+    except UnicodeDecodeError:
+        try:
+            uploaded_file.seek(0)
+            content = uploaded_file.read().decode('latin-1')
+            return content, None
+        except Exception as e:
+            return None, f"Erro ao ler arquivo de texto: {str(e)}"
+
+
+def read_pdf_file(uploaded_file):
+    """
+    Lê arquivo PDF e extrai texto
+
+    Args:
+        uploaded_file: Arquivo do Streamlit file_uploader
+
+    Returns:
+        str: Texto extraído do PDF
+    """
+    try:
+        pdf_reader = PdfReader(BytesIO(uploaded_file.read()))
+        text = ""
+
+        for page in pdf_reader.pages:
+            page_text = page.extract_text()
+            if page_text:
+                text += page_text + "\n"
+
+        if not text.strip():
+            return None, "PDF não contém texto extraível. Pode ser um PDF escaneado (imagem). Tente enviar como imagem."
+
+        return text, None
+
+    except Exception as e:
+        return None, f"Erro ao ler PDF: {str(e)}"
+
+
+def read_image_file(uploaded_file):
+    """
+    Lê arquivo de imagem e retorna em base64 para a API do Claude
+
+    Args:
+        uploaded_file: Arquivo do Streamlit file_uploader
+
+    Returns:
+        tuple: (base64_data, media_type, error)
+    """
+    try:
+        # Determinar o tipo de mídia
+        file_type = uploaded_file.type
+
+        # Mapear tipos MIME
+        media_type_map = {
+            'image/jpeg': 'image/jpeg',
+            'image/jpg': 'image/jpeg',
+            'image/png': 'image/png',
+            'image/gif': 'image/gif',
+            'image/webp': 'image/webp'
+        }
+
+        media_type = media_type_map.get(file_type)
+
+        if not media_type:
+            return None, None, f"Tipo de imagem não suportado: {file_type}"
+
+        # Converter para base64
+        image_data = uploaded_file.read()
+        base64_data = base64.standard_b64encode(image_data).decode('utf-8')
+
+        return base64_data, media_type, None
+
+    except Exception as e:
+        return None, None, f"Erro ao processar imagem: {str(e)}"
+
+
+def process_uploaded_file(uploaded_file):
+    """
+    Processa arquivo enviado e retorna conteúdo apropriado
+
+    Args:
+        uploaded_file: Arquivo do Streamlit file_uploader
+
+    Returns:
+        dict: {
+            'type': 'text' ou 'image',
+            'content': texto ou dados da imagem,
+            'media_type': tipo MIME (apenas para imagens),
+            'error': mensagem de erro ou None
+        }
+    """
+    if uploaded_file is None:
+        return {'type': None, 'content': None, 'error': 'Nenhum arquivo enviado'}
+
+    file_type = uploaded_file.type
+    file_name = uploaded_file.name.lower()
+
+    # Arquivo de texto
+    if file_type == 'text/plain' or file_name.endswith('.txt'):
+        content, error = read_text_file(uploaded_file)
+        return {
+            'type': 'text',
+            'content': content,
+            'media_type': None,
+            'error': error
+        }
+
+    # Arquivo PDF
+    elif file_type == 'application/pdf' or file_name.endswith('.pdf'):
+        content, error = read_pdf_file(uploaded_file)
+        return {
+            'type': 'text',
+            'content': content,
+            'media_type': None,
+            'error': error
+        }
+
+    # Arquivo de imagem
+    elif file_type.startswith('image/'):
+        base64_data, media_type, error = read_image_file(uploaded_file)
+        return {
+            'type': 'image',
+            'content': base64_data,
+            'media_type': media_type,
+            'error': error
+        }
+
+    else:
+        return {
+            'type': None,
+            'content': None,
+            'media_type': None,
+            'error': f'Tipo de arquivo não suportado: {file_type}'
+        }

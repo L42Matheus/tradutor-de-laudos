@@ -5,45 +5,44 @@ class LaudoTranslator:
     def __init__(self, api_key):
         self.client = anthropic.Anthropic(api_key=api_key)
         self.model = "claude-sonnet-4-20250514"
-    
-    def translate(self, laudo_text, tipo_exame):
-        """
-        Traduz um laudo médico para linguagem simples
-        
-        Args:
-            laudo_text: Texto do laudo (já anonimizado)
-            tipo_exame: Tipo do exame médico
-            
-        Returns:
-            dict com resumo, explicação detalhada, glossário e alertas
-        """
-        
-        # Obter prompt específico para o tipo de exame
-        system_prompt = get_prompt_by_type(tipo_exame)
-        
-        # Montar mensagem do usuário
-        user_message = f"""
-Analise o seguinte laudo médico e forneça uma explicação completa:
 
-{laudo_text}
-
-Por favor, forneça:
+    def _get_user_prompt(self):
+        """Retorna o prompt padrão para análise de laudos"""
+        return """Por favor, forneça:
 1. Um resumo em linguagem muito simples (como se explicasse para alguém sem conhecimento médico)
 2. Uma explicação mais detalhada de cada parte importante
 3. Um glossário dos principais termos técnicos encontrados
 4. Alertas caso haja algo que exija atenção médica urgente
 
 Formato da resposta em JSON:
-{{
+{
     "resumo": "texto do resumo simples",
     "detalhado": "explicação detalhada",
     "glossario": "glossário de termos",
     "alertas": "avisos importantes ou null"
-}}
-"""
-        
+}"""
+
+    def translate(self, laudo_text, tipo_exame):
+        """
+        Traduz um laudo médico para linguagem simples
+
+        Args:
+            laudo_text: Texto do laudo (já anonimizado)
+            tipo_exame: Tipo do exame médico
+
+        Returns:
+            dict com resumo, explicação detalhada, glossário e alertas
+        """
+
+        system_prompt = get_prompt_by_type(tipo_exame)
+
+        user_message = f"""Analise o seguinte laudo médico e forneça uma explicação completa:
+
+{laudo_text}
+
+{self._get_user_prompt()}"""
+
         try:
-            # Chamar API do Claude
             response = self.client.messages.create(
                 model=self.model,
                 max_tokens=4000,
@@ -53,17 +52,65 @@ Formato da resposta em JSON:
                     {"role": "user", "content": user_message}
                 ]
             )
-            
-            # Extrair resposta
+
             response_text = response.content[0].text
-            
-            # Parse do JSON (simplificado - em produção, use json.loads)
             resultado = self._parse_response(response_text)
-            
+
             return resultado
-            
+
         except Exception as e:
             raise Exception(f"Erro ao processar com a API: {str(e)}")
+
+    def translate_image(self, image_base64, media_type, tipo_exame):
+        """
+        Traduz um laudo médico a partir de uma imagem
+
+        Args:
+            image_base64: Imagem em base64
+            media_type: Tipo MIME da imagem (ex: image/jpeg)
+            tipo_exame: Tipo do exame médico
+
+        Returns:
+            dict com resumo, explicação detalhada, glossário e alertas
+        """
+
+        system_prompt = get_prompt_by_type(tipo_exame)
+
+        user_content = [
+            {
+                "type": "image",
+                "source": {
+                    "type": "base64",
+                    "media_type": media_type,
+                    "data": image_base64
+                }
+            },
+            {
+                "type": "text",
+                "text": f"""Analise a imagem do laudo médico acima e forneça uma explicação completa.
+
+{self._get_user_prompt()}"""
+            }
+        ]
+
+        try:
+            response = self.client.messages.create(
+                model=self.model,
+                max_tokens=4000,
+                temperature=0.3,
+                system=system_prompt,
+                messages=[
+                    {"role": "user", "content": user_content}
+                ]
+            )
+
+            response_text = response.content[0].text
+            resultado = self._parse_response(response_text)
+
+            return resultado
+
+        except Exception as e:
+            raise Exception(f"Erro ao processar imagem com a API: {str(e)}")
     
     def _parse_response(self, response_text):
         """
