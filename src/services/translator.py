@@ -1,12 +1,13 @@
 """
-Modulo de traducao de documentos medicos
+Servico de traducao de documentos medicos
 Suporta laudos e receitas, em texto e imagem
 """
 
 import json
 import anthropic
-from prompts import get_prompt_by_type
-from config import DocumentCategory, CLAUDE_MODEL, MAX_TOKENS, TEMPERATURE
+
+from src.config import DocumentCategory, CLAUDE_MODEL, MAX_TOKENS, TEMPERATURE
+from src.prompts import get_prompt_by_type
 
 
 class MedicalTranslator:
@@ -176,7 +177,3 @@ Formato da resposta em JSON:
                 'glossario': "Nao foi possivel gerar glossario",
                 'alertas': None
             }
-
-
-# Alias para compatibilidade com codigo existente
-LaudoTranslator = MedicalTranslator
