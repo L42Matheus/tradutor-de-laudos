@@ -60,64 +60,93 @@ if consent:
         ["Exame de Sangue", "Exame de Imagem (RX, TC, RM)", "Exame de Urina", "Biópsia/Patologia", "Outro"]
     )
 
-    # Upload de arquivo
-    st.subheader("📁 Envie seu laudo")
-    st.markdown("Formatos aceitos: **PDF**, **Imagem** (JPG, PNG) ou **Texto** (TXT)")
+    # Opções de entrada
+    st.subheader("📄 Envie seu laudo")
 
-    uploaded_file = st.file_uploader(
-        "Escolha o arquivo do laudo",
-        type=['pdf', 'txt', 'png', 'jpg', 'jpeg', 'gif', 'webp'],
-        help="Envie o arquivo do seu laudo médico. Aceitamos PDF, imagens e arquivos de texto."
+    input_method = st.radio(
+        "Como deseja enviar o laudo?",
+        ["📁 Upload de arquivo", "✏️ Colar texto"],
+        horizontal=True
     )
 
-    # Mostrar preview do arquivo
-    if uploaded_file:
-        file_details = f"**Arquivo:** {uploaded_file.name} | **Tamanho:** {uploaded_file.size / 1024:.1f} KB"
-        st.caption(file_details)
+    uploaded_file = None
+    laudo_texto = None
 
-        # Preview para imagens
-        if uploaded_file.type.startswith('image/'):
-            st.image(uploaded_file, caption="Preview do laudo", use_container_width=True)
-            uploaded_file.seek(0)  # Reset para leitura posterior
+    if input_method == "📁 Upload de arquivo":
+        st.markdown("Formatos aceitos: **PDF**, **Imagem** (JPG, PNG) ou **Texto** (TXT)")
+
+        uploaded_file = st.file_uploader(
+            "Escolha o arquivo do laudo",
+            type=['pdf', 'txt', 'png', 'jpg', 'jpeg', 'gif', 'webp'],
+            help="Envie o arquivo do seu laudo médico. Aceitamos PDF, imagens e arquivos de texto."
+        )
+
+        # Mostrar preview do arquivo
+        if uploaded_file:
+            file_details = f"**Arquivo:** {uploaded_file.name} | **Tamanho:** {uploaded_file.size / 1024:.1f} KB"
+            st.caption(file_details)
+
+            # Preview para imagens
+            if uploaded_file.type.startswith('image/'):
+                st.image(uploaded_file, caption="Preview do laudo", use_container_width=True)
+                uploaded_file.seek(0)  # Reset para leitura posterior
+
+    else:  # Colar texto
+        laudo_texto = st.text_area(
+            "Cole o texto do laudo:",
+            height=300,
+            placeholder="Cole aqui o texto do seu laudo médico..."
+        )
 
     # Botão de tradução
     col1, col2, col3 = st.columns([1, 1, 1])
     with col2:
         traduzir_btn = st.button("🔄 Traduzir Laudo", use_container_width=True, type="primary")
 
-    if traduzir_btn and uploaded_file:
+    # Verificar se há conteúdo para processar
+    has_content = uploaded_file or (laudo_texto and laudo_texto.strip())
+
+    if traduzir_btn and has_content:
         with st.spinner("Analisando seu laudo... ⏳"):
             try:
-                # Processar arquivo
-                file_data = process_uploaded_file(uploaded_file)
+                resultado = None
 
-                if file_data['error']:
-                    st.error(f"❌ {file_data['error']}")
-                    st.stop()
-
-                # Processar baseado no tipo de arquivo
-                if file_data['type'] == 'text':
-                    # Anonimizar o texto
-                    laudo_anonimizado, dados_removidos = anonymize_text(file_data['content'])
+                # Processar texto colado diretamente
+                if laudo_texto and laudo_texto.strip():
+                    laudo_anonimizado, dados_removidos = anonymize_text(laudo_texto)
 
                     if dados_removidos:
                         st.info(f"🔒 Dados pessoais removidos para sua segurança: {', '.join(dados_removidos)}")
 
-                    # Traduzir o laudo
                     resultado = translator.translate(laudo_anonimizado, tipo_exame)
 
-                elif file_data['type'] == 'image':
-                    st.info("🖼️ Processando imagem do laudo...")
-                    # Traduzir imagem diretamente (Claude Vision)
-                    resultado = translator.translate_image(
-                        file_data['content'],
-                        file_data['media_type'],
-                        tipo_exame
-                    )
+                # Processar arquivo enviado
+                elif uploaded_file:
+                    file_data = process_uploaded_file(uploaded_file)
 
-                else:
-                    st.error("❌ Tipo de arquivo não reconhecido")
-                    st.stop()
+                    if file_data['error']:
+                        st.error(f"❌ {file_data['error']}")
+                        st.stop()
+
+                    if file_data['type'] == 'text':
+                        laudo_anonimizado, dados_removidos = anonymize_text(file_data['content'])
+
+                        if dados_removidos:
+                            st.info(f"🔒 Dados pessoais removidos para sua segurança: {', '.join(dados_removidos)}")
+
+                        resultado = translator.translate(laudo_anonimizado, tipo_exame)
+
+                    elif file_data['type'] == 'image':
+                        st.info("🖼️ Processando imagem do laudo...")
+                        resultado = translator.translate_image(
+                            file_data['content'],
+                            file_data['media_type'],
+                            tipo_exame
+                        )
+
+                    else:
+                        st.error("❌ Tipo de arquivo não reconhecido")
+                        st.stop()
 
                 # Exibir resultado
                 st.success("✅ Tradução concluída!")
@@ -147,8 +176,8 @@ if consent:
                 st.error(f"❌ Erro ao processar o laudo: {str(e)}")
                 st.info("Tente novamente ou entre em contato com o suporte.")
 
-    elif traduzir_btn and not uploaded_file:
-        st.warning("⚠️ Por favor, envie um arquivo de laudo antes de traduzir.")
+    elif traduzir_btn and not has_content:
+        st.warning("⚠️ Por favor, envie um arquivo ou cole o texto do laudo antes de traduzir.")
 
 else:
     st.warning("⚠️ Por favor, leia e aceite os termos de uso para continuar.")
