@@ -1,4 +1,4 @@
 """
-Tradutor de Documentos Medicos
+Traduz Saúde
 Modulo principal
 """

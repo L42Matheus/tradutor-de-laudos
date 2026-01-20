@@ -1,5 +1,5 @@
 """
-Tradutor de Documentos Medicos
+Traduz Saúde
 Aplicacao principal
 """
 
@@ -27,7 +27,7 @@ load_dotenv()
 
 # Configuracao da pagina
 st.set_page_config(
-    page_title="Tradutor de Documentos Medicos",
+    page_title="Traduz Saúde",
     page_icon="🏥",
     layout="wide"
 )

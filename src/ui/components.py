@@ -8,7 +8,7 @@ from src.config import DocumentCategory, TIPOS_LAUDO, TIPOS_RECEITA, ALLOWED_FIL
 
 def show_header():
     """Exibe cabecalho da aplicacao"""
-    st.title("🏥 Tradutor de Documentos Medicos")
+    st.title("🏥 Traduz Saúde")
     st.markdown("*Entenda seus exames e receitas de forma simples e clara*")
 
 
@@ -39,7 +39,7 @@ def show_footer():
     st.markdown("---")
     st.markdown("""
     <div style='text-align: center; color: #666; font-size: 0.9em;'>
-        <p>🏥 Tradutor de Documentos Medicos</p>
+        <p>🏥 Traduz Saúde</p>
         <p style='font-size: 0.8em;'>Este servico nao substitui consulta medica profissional</p>
     </div>
     """, unsafe_allow_html=True)
