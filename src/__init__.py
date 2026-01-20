@@ -1,0 +1,4 @@
+"""
+Traduz Saúde
+Modulo principal
+"""

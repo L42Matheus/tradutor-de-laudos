@@ -1,17 +1,26 @@
+"""
+Utilitario para leitura de arquivos
+Suporta PDF, imagens e texto
+"""
+
 import base64
 from io import BytesIO
+from typing import Dict, Tuple, Optional
+
 from PyPDF2 import PdfReader
 
+from src.config import IMAGE_MIME_TYPES
 
-def read_text_file(uploaded_file):
+
+def read_text_file(uploaded_file) -> Tuple[Optional[str], Optional[str]]:
     """
-    Lê arquivo de texto (.txt)
+    Le arquivo de texto (.txt)
 
     Args:
         uploaded_file: Arquivo do Streamlit file_uploader
 
     Returns:
-        str: Conteúdo do arquivo
+        tuple: (conteudo, erro)
     """
     try:
         content = uploaded_file.read().decode('utf-8')
@@ -25,15 +34,15 @@ def read_text_file(uploaded_file):
             return None, f"Erro ao ler arquivo de texto: {str(e)}"
 
 
-def read_pdf_file(uploaded_file):
+def read_pdf_file(uploaded_file) -> Tuple[Optional[str], Optional[str]]:
     """
-    Lê arquivo PDF e extrai texto
+    Le arquivo PDF e extrai texto
 
     Args:
         uploaded_file: Arquivo do Streamlit file_uploader
 
     Returns:
-        str: Texto extraído do PDF
+        tuple: (texto_extraido, erro)
     """
     try:
         pdf_reader = PdfReader(BytesIO(uploaded_file.read()))
@@ -45,7 +54,7 @@ def read_pdf_file(uploaded_file):
                 text += page_text + "\n"
 
         if not text.strip():
-            return None, "PDF não contém texto extraível. Pode ser um PDF escaneado (imagem). Tente enviar como imagem."
+            return None, "PDF nao contem texto extraivel. Pode ser um PDF escaneado. Tente enviar como imagem."
 
         return text, None
 
@@ -53,35 +62,23 @@ def read_pdf_file(uploaded_file):
         return None, f"Erro ao ler PDF: {str(e)}"
 
 
-def read_image_file(uploaded_file):
+def read_image_file(uploaded_file) -> Tuple[Optional[str], Optional[str], Optional[str]]:
     """
-    Lê arquivo de imagem e retorna em base64 para a API do Claude
+    Le arquivo de imagem e retorna em base64
 
     Args:
         uploaded_file: Arquivo do Streamlit file_uploader
 
     Returns:
-        tuple: (base64_data, media_type, error)
+        tuple: (base64_data, media_type, erro)
     """
     try:
-        # Determinar o tipo de mídia
         file_type = uploaded_file.type
-
-        # Mapear tipos MIME
-        media_type_map = {
-            'image/jpeg': 'image/jpeg',
-            'image/jpg': 'image/jpeg',
-            'image/png': 'image/png',
-            'image/gif': 'image/gif',
-            'image/webp': 'image/webp'
-        }
-
-        media_type = media_type_map.get(file_type)
+        media_type = IMAGE_MIME_TYPES.get(file_type)
 
         if not media_type:
-            return None, None, f"Tipo de imagem não suportado: {file_type}"
+            return None, None, f"Tipo de imagem nao suportado: {file_type}"
 
-        # Converter para base64
         image_data = uploaded_file.read()
         base64_data = base64.standard_b64encode(image_data).decode('utf-8')
 
@@ -91,9 +88,9 @@ def read_image_file(uploaded_file):
         return None, None, f"Erro ao processar imagem: {str(e)}"
 
 
-def process_uploaded_file(uploaded_file):
+def process_uploaded_file(uploaded_file) -> Dict:
     """
-    Processa arquivo enviado e retorna conteúdo apropriado
+    Processa arquivo enviado e retorna conteudo apropriado
 
     Args:
         uploaded_file: Arquivo do Streamlit file_uploader
@@ -107,7 +104,12 @@ def process_uploaded_file(uploaded_file):
         }
     """
     if uploaded_file is None:
-        return {'type': None, 'content': None, 'error': 'Nenhum arquivo enviado'}
+        return {
+            'type': None,
+            'content': None,
+            'media_type': None,
+            'error': 'Nenhum arquivo enviado'
+        }
 
     file_type = uploaded_file.type
     file_name = uploaded_file.name.lower()
@@ -147,5 +149,5 @@ def process_uploaded_file(uploaded_file):
             'type': None,
             'content': None,
             'media_type': None,
-            'error': f'Tipo de arquivo não suportado: {file_type}'
+            'error': f'Tipo de arquivo nao suportado: {file_type}'
         }

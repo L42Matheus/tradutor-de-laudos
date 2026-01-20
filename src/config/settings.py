@@ -2,8 +2,9 @@
 Configuracoes e constantes do sistema
 """
 
-# Categorias de documentos aceitos
+
 class DocumentCategory:
+    """Categorias de documentos aceitos"""
     LAUDO = "laudo"
     RECEITA = "receita"
 

@@ -1,6 +1,6 @@
-# Tradutor de Laudos Medicos
+# Traduz Saúde
 
-Sistema para traduzir laudos medicos em linguagem tecnica para linguagem acessivel ao paciente.
+Sistema para traduzir laudos e receitas médicas em linguagem técnica para linguagem acessível ao paciente.
 
 ## O que faz?
 
