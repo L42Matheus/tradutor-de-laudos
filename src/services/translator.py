@@ -1,21 +1,31 @@
 """
 Servico de traducao de documentos medicos
 Suporta laudos e receitas, em texto e imagem
+Com cache integrado para economizar chamadas a API
 """
 
 import json
 import anthropic
 
-from src.config import DocumentCategory, CLAUDE_MODEL, MAX_TOKENS, TEMPERATURE
+from src.config import (
+    DocumentCategory,
+    CLAUDE_MODEL,
+    MAX_TOKENS,
+    TEMPERATURE,
+    CACHE_ENABLED
+)
 from src.prompts import get_prompt_by_type
+from src.services.cache import get_cache, CacheKeyGenerator
 
 
 class MedicalTranslator:
     """Tradutor de documentos medicos (laudos e receitas)"""
 
-    def __init__(self, api_key: str):
+    def __init__(self, api_key: str, use_cache: bool = CACHE_ENABLED):
         self.client = anthropic.Anthropic(api_key=api_key)
         self.model = CLAUDE_MODEL
+        self.use_cache = use_cache
+        self._cache = get_cache() if use_cache else None
 
     def translate_text(self, text: str, tipo: str, categoria: str = DocumentCategory.LAUDO) -> dict:
         """
@@ -29,6 +39,15 @@ class MedicalTranslator:
         Returns:
             dict com resumo, explicacao detalhada, glossario e alertas
         """
+        # Verifica cache primeiro
+        cache_key = None
+        if self.use_cache and self._cache:
+            cache_key = CacheKeyGenerator.generate(text, tipo, categoria)
+            cached_result = self._cache.get(cache_key)
+            if cached_result:
+                cached_result['from_cache'] = True
+                return cached_result
+
         system_prompt = get_prompt_by_type(tipo, categoria)
         user_prompt = self._get_user_prompt(categoria)
         doc_type = "receita medica" if categoria == DocumentCategory.RECEITA else "laudo medico"
@@ -39,7 +58,14 @@ class MedicalTranslator:
 
 {user_prompt}"""
 
-        return self._call_api(system_prompt, user_message)
+        result = self._call_api(system_prompt, user_message)
+
+        # Salva no cache
+        if self.use_cache and self._cache and cache_key:
+            self._cache.set(cache_key, result)
+
+        result['from_cache'] = False
+        return result
 
     def translate_image(self, image_base64: str, media_type: str, tipo: str,
                        categoria: str = DocumentCategory.LAUDO) -> dict:
@@ -55,6 +81,15 @@ class MedicalTranslator:
         Returns:
             dict com resumo, explicacao detalhada, glossario e alertas
         """
+        # Verifica cache primeiro
+        cache_key = None
+        if self.use_cache and self._cache:
+            cache_key = CacheKeyGenerator.generate_from_image(image_base64, tipo, categoria)
+            cached_result = self._cache.get(cache_key)
+            if cached_result:
+                cached_result['from_cache'] = True
+                return cached_result
+
         system_prompt = get_prompt_by_type(tipo, categoria)
         user_prompt = self._get_user_prompt(categoria)
         doc_type = "receita medica" if categoria == DocumentCategory.RECEITA else "laudo medico"
@@ -76,7 +111,14 @@ class MedicalTranslator:
             }
         ]
 
-        return self._call_api_with_image(system_prompt, user_content)
+        result = self._call_api_with_image(system_prompt, user_content)
+
+        # Salva no cache
+        if self.use_cache and self._cache and cache_key:
+            self._cache.set(cache_key, result)
+
+        result['from_cache'] = False
+        return result
 
     def _get_user_prompt(self, categoria: str) -> str:
         """Retorna o prompt de instrucao baseado na categoria"""
