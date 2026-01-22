@@ -124,8 +124,19 @@ def main():
             if file_data.get('error'):
                 st.error(f"❌ {file_data['error']}")
                 file_data = None
+            else:
+                # Salva file_data processado no session_state
+                st.session_state.processed_file_data = file_data
+        elif st.session_state.get('uploaded_file_data'):
+            # Usa arquivo salvo no session_state (apos mudar tema)
+            file_data = st.session_state.get('processed_file_data')
     else:
         texto = show_text_input()
+        # Limpa arquivo do session_state se mudou para texto
+        if 'uploaded_file_data' in st.session_state:
+            del st.session_state.uploaded_file_data
+        if 'processed_file_data' in st.session_state:
+            del st.session_state.processed_file_data
 
     # Botao de traducao
     col1, col2, col3 = st.columns([1, 1, 1])
@@ -151,6 +162,9 @@ def main():
                 resultado = process_document(translator, file_data, texto, tipo, categoria)
 
                 if resultado:
+                    # Salva resultado no session_state
+                    st.session_state.resultado = resultado
+                    st.session_state.resultado_categoria = categoria
                     show_results(resultado, categoria)
                 else:
                     st.error("❌ Nao foi possivel processar o documento")
@@ -161,6 +175,10 @@ def main():
 
     elif traduzir_btn and not has_content:
         st.warning("⚠️ Por favor, envie um arquivo ou cole o texto do documento antes de traduzir.")
+
+    # Mostra resultado salvo (apos mudar tema)
+    elif st.session_state.get('resultado') and has_content:
+        show_results(st.session_state.resultado, st.session_state.resultado_categoria)
 
 
 if __name__ == "__main__":

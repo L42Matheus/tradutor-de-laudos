@@ -117,9 +117,22 @@ def show_file_uploader():
     uploaded_file = st.file_uploader(
         "Escolha o arquivo",
         type=ALLOWED_FILE_TYPES,
-        help="Envie o arquivo do seu documento medico."
+        help="Envie o arquivo do seu documento medico.",
+        key="file_uploader"
     )
 
+    # Salva no session_state quando faz upload
+    if uploaded_file:
+        st.session_state.uploaded_file_data = {
+            'name': uploaded_file.name,
+            'size': uploaded_file.size,
+            'type': uploaded_file.type,
+            'content': uploaded_file.getvalue()
+        }
+        uploaded_file.seek(0)
+
+    # Mostra preview se tem arquivo (atual ou salvo)
+    file_data = st.session_state.get('uploaded_file_data')
     if uploaded_file:
         file_details = f"**Arquivo:** {uploaded_file.name} | **Tamanho:** {uploaded_file.size / 1024:.1f} KB"
         st.caption(file_details)
@@ -127,6 +140,12 @@ def show_file_uploader():
         if uploaded_file.type.startswith('image/'):
             st.image(uploaded_file, caption="Preview do documento", use_container_width=True)
             uploaded_file.seek(0)
+    elif file_data:
+        file_details = f"**Arquivo:** {file_data['name']} | **Tamanho:** {file_data['size'] / 1024:.1f} KB"
+        st.caption(file_details)
+
+        if file_data['type'].startswith('image/'):
+            st.image(file_data['content'], caption="Preview do documento", use_container_width=True)
 
     return uploaded_file
 
