@@ -13,6 +13,12 @@ def init_theme():
         st.session_state.theme = 'dark'
 
 
+def _on_theme_change():
+    """Callback quando tema muda"""
+    selected = st.session_state.theme_select
+    st.session_state.theme = 'dark' if selected == "Escuro" else 'light'
+
+
 def show_theme_toggle():
     """Exibe toggle para alternar entre tema claro e escuro na sidebar"""
     with st.sidebar:
@@ -22,18 +28,13 @@ def show_theme_toggle():
         theme_options = ["Escuro", "Claro"]
         current_index = 0 if current_theme == 'dark' else 1
 
-        selected = st.radio(
+        st.selectbox(
             "Tema:",
             theme_options,
             index=current_index,
-            horizontal=True,
-            key="theme_radio"
+            key="theme_select",
+            on_change=_on_theme_change
         )
-
-        new_theme = 'dark' if selected == "Escuro" else 'light'
-        if new_theme != current_theme:
-            st.session_state.theme = new_theme
-            st.rerun()
 
 
 def apply_custom_styles():
