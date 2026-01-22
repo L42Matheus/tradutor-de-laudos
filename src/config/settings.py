@@ -43,3 +43,12 @@ CLAUDE_MODEL = "claude-sonnet-4-20250514"
 # Configuracoes de requisicao
 MAX_TOKENS = 4000
 TEMPERATURE = 0.3
+
+# Configuracoes de cache
+CACHE_ENABLED = True
+CACHE_TTL_SECONDS = 3600  # 1 hora
+CACHE_MAX_SIZE = 100  # Maximo de entradas em memoria
+
+# Limites de uso (protecao de custos)
+MAX_TEXT_LENGTH = 10000  # Caracteres
+MAX_REQUESTS_PER_SESSION = 20
