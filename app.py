@@ -92,7 +92,11 @@ def main():
         return
 
     # Verificar API Key (tenta st.secrets primeiro, depois .env)
-    api_key = st.secrets.get("ANTHROPIC_API_KEY") or os.getenv("ANTHROPIC_API_KEY")
+    api_key = None
+    try:
+        api_key = st.secrets["ANTHROPIC_API_KEY"]
+    except (KeyError, FileNotFoundError):
+        api_key = os.getenv("ANTHROPIC_API_KEY")
     if not api_key:
         st.error("⚠️ Configuracao necessaria: adicione sua ANTHROPIC_API_KEY")
         st.info("Adicione em .streamlit/secrets.toml ou no arquivo .env")
