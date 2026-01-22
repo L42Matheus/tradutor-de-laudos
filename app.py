@@ -3,9 +3,15 @@ Traduz Saúde
 Aplicacao principal
 """
 
-import streamlit as st
 import os
+from pathlib import Path
+
+import streamlit as st
 from dotenv import load_dotenv
+
+# Carregar variaveis de ambiente do .env
+APP_DIR = Path(__file__).parent.resolve()
+load_dotenv(APP_DIR / '.env')
 
 from src.config import DocumentCategory
 from src.services import MedicalTranslator, DocumentValidator, anonymize_text
@@ -19,11 +25,10 @@ from src.ui import (
     show_input_method,
     show_file_uploader,
     show_text_input,
-    show_results
+    show_results,
+    show_theme_toggle,
+    apply_custom_styles
 )
-
-# Carregar variaveis de ambiente
-load_dotenv()
 
 # Configuracao da pagina
 st.set_page_config(
@@ -75,20 +80,22 @@ def process_document(translator: MedicalTranslator, file_data: dict, texto: str,
 
 def main():
     """Funcao principal da aplicacao"""
+    apply_custom_styles()
+    show_theme_toggle()
     show_header()
     show_terms()
 
-    consent = st.checkbox("Li e concordo com os termos acima")
+    consent = st.checkbox("Li e concordo com os termos acima", key="consent_checkbox")
 
     if not consent:
         st.warning("⚠️ Por favor, leia e aceite os termos de uso para continuar.")
         return
 
-    # Verificar API Key
-    api_key = os.getenv("ANTHROPIC_API_KEY")
+    # Verificar API Key (tenta st.secrets primeiro, depois .env)
+    api_key = st.secrets.get("ANTHROPIC_API_KEY") or os.getenv("ANTHROPIC_API_KEY")
     if not api_key:
-        st.error("⚠️ Configuracao necessaria: adicione sua ANTHROPIC_API_KEY no arquivo .env")
-        st.info("Veja o arquivo .env.example para instrucoes")
+        st.error("⚠️ Configuracao necessaria: adicione sua ANTHROPIC_API_KEY")
+        st.info("Adicione em .streamlit/secrets.toml ou no arquivo .env")
         return
 
     # Inicializar servicos

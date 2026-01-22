@@ -4,12 +4,48 @@ Componentes de interface do usuario
 
 import streamlit as st
 from src.config import DocumentCategory, TIPOS_LAUDO, TIPOS_RECEITA, ALLOWED_FILE_TYPES
+from src.ui.styles import get_custom_css, get_header_html, get_footer_html
+
+
+def init_theme():
+    """Inicializa o estado do tema"""
+    if 'theme' not in st.session_state:
+        st.session_state.theme = 'dark'
+
+
+def show_theme_toggle():
+    """Exibe toggle para alternar entre tema claro e escuro na sidebar"""
+    with st.sidebar:
+        st.markdown("### Configuracoes")
+        current_theme = st.session_state.get('theme', 'dark')
+
+        theme_options = ["Escuro", "Claro"]
+        current_index = 0 if current_theme == 'dark' else 1
+
+        selected = st.radio(
+            "Tema:",
+            theme_options,
+            index=current_index,
+            horizontal=True,
+            key="theme_radio"
+        )
+
+        new_theme = 'dark' if selected == "Escuro" else 'light'
+        if new_theme != current_theme:
+            st.session_state.theme = new_theme
+            st.rerun()
+
+
+def apply_custom_styles():
+    """Aplica estilos CSS customizados baseados no tema atual"""
+    init_theme()
+    theme = st.session_state.get('theme', 'dark')
+    st.markdown(get_custom_css(theme), unsafe_allow_html=True)
 
 
 def show_header():
     """Exibe cabecalho da aplicacao"""
-    st.title("🏥 Traduz Saúde")
-    st.markdown("*Entenda seus exames e receitas de forma simples e clara*")
+    st.markdown(get_header_html(), unsafe_allow_html=True)
 
 
 def show_terms():
@@ -36,13 +72,7 @@ def show_terms():
 
 def show_footer():
     """Exibe rodape"""
-    st.markdown("---")
-    st.markdown("""
-    <div style='text-align: center; color: #666; font-size: 0.9em;'>
-        <p>🏥 Traduz Saúde</p>
-        <p style='font-size: 0.8em;'>Este servico nao substitui consulta medica profissional</p>
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown(get_footer_html(), unsafe_allow_html=True)
 
 
 def show_category_selector() -> str:
