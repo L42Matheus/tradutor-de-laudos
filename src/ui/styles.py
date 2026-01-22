@@ -325,6 +325,28 @@ def get_custom_css(theme: str = "dark") -> str:
         .stAlert p {{
             color: inherit !important;
         }}
+
+        /* Code blocks (botao copiar) */
+        .stCode, [data-testid="stCode"] {{
+            background-color: {card_bg} !important;
+            border: 1px solid {border_color} !important;
+            border-radius: 8px !important;
+        }}
+
+        .stCode code, [data-testid="stCode"] code {{
+            color: {text_color} !important;
+            background-color: {card_bg} !important;
+        }}
+
+        .stCode pre, [data-testid="stCode"] pre {{
+            color: {text_color} !important;
+            background-color: {card_bg} !important;
+        }}
+
+        /* Expander do copiar tudo */
+        .stExpander [data-testid="stCode"] {{
+            background-color: {input_bg} !important;
+        }}
     </style>
     """
 
