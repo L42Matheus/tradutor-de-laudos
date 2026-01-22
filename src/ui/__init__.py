@@ -11,7 +11,9 @@ from .components import (
     show_input_method,
     show_file_uploader,
     show_text_input,
-    show_results
+    show_results,
+    show_theme_toggle,
+    apply_custom_styles
 )
 
 __all__ = [
@@ -23,5 +25,7 @@ __all__ = [
     'show_input_method',
     'show_file_uploader',
     'show_text_input',
-    'show_results'
+    'show_results',
+    'show_theme_toggle',
+    'apply_custom_styles'
 ]
