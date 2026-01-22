@@ -162,7 +162,11 @@ def show_text_input() -> str:
 
 def show_results(resultado: dict, categoria: str):
     """Exibe resultados da traducao"""
-    st.success("✅ Traducao concluida!")
+    # Indicador de cache
+    if resultado.get('from_cache'):
+        st.success("✅ Traducao concluida! (recuperado do cache)")
+    else:
+        st.success("✅ Traducao concluida!")
 
     # Labels baseados na categoria
     if categoria == DocumentCategory.RECEITA:
@@ -175,16 +179,48 @@ def show_results(resultado: dict, categoria: str):
     with tab1:
         st.markdown("### " + tab_labels[0].split(" ", 1)[1])
         st.markdown(resultado.get('resumo', 'Nao disponivel'))
+        _show_copy_button(resultado.get('resumo', ''), "resumo")
 
     with tab2:
         st.markdown("### " + tab_labels[1].split(" ", 1)[1])
         st.markdown(resultado.get('detalhado', 'Nao disponivel'))
+        _show_copy_button(resultado.get('detalhado', ''), "detalhado")
 
     with tab3:
         st.markdown("### Glossario")
         st.markdown(resultado.get('glossario', 'Nao disponivel'))
+        _show_copy_button(resultado.get('glossario', ''), "glossario")
 
     if resultado.get('alertas'):
         st.warning("⚠️ " + resultado['alertas'])
 
+    # Botao copiar tudo
+    _show_copy_all_button(resultado)
+
     st.info("💡 **Lembre-se:** Esta traducao e apenas informativa. Sempre consulte seu medico!")
+
+
+def _show_copy_button(text: str, key: str):
+    """Exibe botao para copiar texto especifico"""
+    if st.button(f"📋 Copiar", key=f"copy_{key}", use_container_width=False):
+        st.code(text, language=None)
+        st.caption("Texto acima pronto para copiar (Ctrl+C)")
+
+
+def _show_copy_all_button(resultado: dict):
+    """Exibe botao para copiar todo o resultado"""
+    full_text = f"""RESUMO:
+{resultado.get('resumo', '')}
+
+DETALHADO:
+{resultado.get('detalhado', '')}
+
+GLOSSARIO:
+{resultado.get('glossario', '')}
+"""
+    if resultado.get('alertas'):
+        full_text += f"\nALERTAS:\n{resultado['alertas']}"
+
+    with st.expander("📋 Copiar resultado completo"):
+        st.code(full_text, language=None)
+        st.caption("Selecione todo o texto acima e copie (Ctrl+A, Ctrl+C)")
