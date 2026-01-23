@@ -126,27 +126,31 @@ class MedicalTranslator:
             return """Por favor, forneca:
 1. Um resumo simples de todos os medicamentos prescritos
 2. Explicacao detalhada de cada medicamento (para que serve, como tomar)
-3. Um glossario dos termos tecnicos encontrados
-4. Alertas importantes (interacoes, efeitos colaterais, cuidados)
+3. Explicacao super simples, como se fosse para uma crianca de 10 anos ou alguem que nunca estudou medicina (use analogias do dia a dia, evite termos tecnicos)
+4. Um glossario dos termos tecnicos encontrados
+5. Alertas importantes (interacoes, efeitos colaterais, cuidados)
 
 Formato da resposta em JSON:
 {
     "resumo": "resumo dos medicamentos",
     "detalhado": "explicacao detalhada de cada medicamento",
+    "entenda_facil": "explicacao como se fosse para crianca, bem simples e com analogias",
     "glossario": "glossario de termos",
     "alertas": "avisos importantes ou null"
 }"""
         else:
             return """Por favor, forneca:
-1. Um resumo em linguagem muito simples (como se explicasse para alguem sem conhecimento medico)
+1. Um resumo em linguagem simples (como se explicasse para alguem sem conhecimento medico)
 2. Uma explicacao mais detalhada de cada parte importante
-3. Um glossario dos principais termos tecnicos encontrados
-4. Alertas caso haja algo que exija atencao medica urgente
+3. Explicacao super simples, como se fosse para uma crianca de 10 anos ou alguem que nunca estudou medicina (use analogias do dia a dia, evite termos tecnicos)
+4. Um glossario dos principais termos tecnicos encontrados
+5. Alertas caso haja algo que exija atencao medica urgente
 
 Formato da resposta em JSON:
 {
     "resumo": "texto do resumo simples",
     "detalhado": "explicacao detalhada",
+    "entenda_facil": "explicacao como se fosse para crianca, bem simples e com analogias",
     "glossario": "glossario de termos",
     "alertas": "avisos importantes ou null"
 }"""
@@ -208,6 +212,7 @@ Formato da resposta em JSON:
             return {
                 'resumo': resultado.get('resumo', 'Nao foi possivel gerar resumo'),
                 'detalhado': resultado.get('detalhado', 'Nao foi possivel gerar explicacao detalhada'),
+                'entenda_facil': resultado.get('entenda_facil', 'Nao foi possivel gerar explicacao simples'),
                 'glossario': resultado.get('glossario', 'Nao foi possivel gerar glossario'),
                 'alertas': resultado.get('alertas')
             }
