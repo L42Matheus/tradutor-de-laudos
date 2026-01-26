@@ -169,6 +169,14 @@ def main():
 
             st.success(f"✅ Documento validado: {validation['message']}")
 
+            # Verifica se categoria selecionada corresponde ao documento
+            detected_type = validation.get('document_type')
+            if detected_type and detected_type != categoria:
+                tipo_nome = "Receita Médica" if detected_type == "receita" else "Laudo Médico"
+                st.info(f"📋 Documento detectado como **{tipo_nome}**. Ajustando automaticamente.")
+                categoria = detected_type
+                tipo = "Receita Simples" if detected_type == "receita" else "Outro"
+
         with st.spinner("Traduzindo documento... ⏳"):
             try:
                 resultado = process_document(translator, file_data, texto, tipo, categoria)
