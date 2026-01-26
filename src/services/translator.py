@@ -129,6 +129,7 @@ class MedicalTranslator:
 3. Explicacao super simples, como se fosse para uma crianca de 10 anos ou alguem que nunca estudou medicina (use analogias do dia a dia, evite termos tecnicos)
 4. Um glossario dos termos tecnicos encontrados
 5. Alertas importantes (interacoes, efeitos colaterais, cuidados)
+6. Identifique se algum medicamento e para saude mental (ansiedade, depressao, transtornos psiquiatricos, insonia, etc)
 
 Formato da resposta em JSON:
 {
@@ -136,7 +137,8 @@ Formato da resposta em JSON:
     "detalhado": "explicacao detalhada de cada medicamento",
     "entenda_facil": "explicacao como se fosse para crianca, bem simples e com analogias",
     "glossario": "glossario de termos",
-    "alertas": "avisos importantes ou null"
+    "alertas": "avisos importantes ou null",
+    "is_saude_mental": true ou false
 }"""
         else:
             return """Por favor, forneca:
@@ -214,7 +216,8 @@ Formato da resposta em JSON:
                 'detalhado': resultado.get('detalhado', 'Nao foi possivel gerar explicacao detalhada'),
                 'entenda_facil': resultado.get('entenda_facil', 'Nao foi possivel gerar explicacao simples'),
                 'glossario': resultado.get('glossario', 'Nao foi possivel gerar glossario'),
-                'alertas': resultado.get('alertas')
+                'alertas': resultado.get('alertas'),
+                'is_saude_mental': resultado.get('is_saude_mental', False)
             }
 
         except json.JSONDecodeError:

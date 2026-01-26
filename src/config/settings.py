@@ -7,6 +7,7 @@ class DocumentCategory:
     """Categorias de documentos aceitos"""
     LAUDO = "laudo"
     RECEITA = "receita"
+    SAUDE_MENTAL = "saude_mental"
 
 
 # Tipos de laudos medicos
@@ -23,6 +24,14 @@ TIPOS_RECEITA = [
     "Receita Simples",
     "Receita de Controle Especial",
     "Receita de Antibiotico"
+]
+
+# Tipos de documentos de saude mental
+TIPOS_SAUDE_MENTAL = [
+    "Receita de Antidepressivo",
+    "Receita de Ansiolitico",
+    "Laudo Psiquiatrico",
+    "Outro"
 ]
 
 # Formatos de arquivo aceitos

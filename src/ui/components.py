@@ -3,8 +3,9 @@ Componentes de interface do usuario
 """
 
 import streamlit as st
-from src.config import DocumentCategory, TIPOS_LAUDO, TIPOS_RECEITA, ALLOWED_FILE_TYPES
+from src.config import DocumentCategory, TIPOS_LAUDO, TIPOS_RECEITA, TIPOS_SAUDE_MENTAL, ALLOWED_FILE_TYPES
 from src.ui.styles import get_custom_css, get_header_html, get_footer_html
+from src.ui.apoio_emocional import show_apoio_emocional_inline
 
 
 def init_theme():
@@ -77,17 +78,19 @@ def show_footer():
 
 
 def show_category_selector() -> str:
-    """Exibe seletor de categoria (laudo ou receita)"""
+    """Exibe seletor de categoria"""
     st.subheader("📋 O que voce deseja traduzir?")
 
     categoria = st.radio(
         "Selecione o tipo de documento:",
-        ["📄 Laudo Medico", "💊 Receita Medica"],
+        ["📄 Laudo Medico", "💊 Receita Medica", "🧠 Ansiedade/Depressao"],
         horizontal=True
     )
 
     if "Laudo" in categoria:
         return DocumentCategory.LAUDO
+    elif "Ansiedade" in categoria:
+        return DocumentCategory.SAUDE_MENTAL
     else:
         return DocumentCategory.RECEITA
 
@@ -96,6 +99,8 @@ def show_type_selector(categoria: str) -> str:
     """Exibe seletor de tipo baseado na categoria"""
     if categoria == DocumentCategory.RECEITA:
         return st.selectbox("Tipo de receita:", TIPOS_RECEITA)
+    elif categoria == DocumentCategory.SAUDE_MENTAL:
+        return st.selectbox("Tipo de documento:", TIPOS_SAUDE_MENTAL)
     else:
         return st.selectbox("Tipo de exame:", TIPOS_LAUDO)
 
@@ -169,6 +174,8 @@ def show_results(resultado: dict, categoria: str):
 
     if categoria == DocumentCategory.RECEITA:
         tab_labels = ["💊 Resumo", "📋 Como Tomar", "💡 Entenda Facil", "📚 Termos"]
+    elif categoria == DocumentCategory.SAUDE_MENTAL:
+        tab_labels = ["🧠 Resumo", "📋 Como Tomar", "💡 Entenda Facil", "📚 Termos"]
     else:
         tab_labels = ["📋 Resumo", "🔍 Detalhado", "💡 Entenda Facil", "📚 Termos"]
 
@@ -199,6 +206,10 @@ def show_results(resultado: dict, categoria: str):
         st.warning("⚠️ " + resultado['alertas'])
 
     st.info("💡 **Lembre-se:** Esta traducao e apenas informativa. Sempre consulte seu medico!")
+
+    # Mostra apoio emocional para categoria saude mental ou medicamentos psiquiatricos
+    if categoria == DocumentCategory.SAUDE_MENTAL or resultado.get('is_saude_mental'):
+        show_apoio_emocional_inline()
 
 
 def _show_copy_button(text: str, key: str):

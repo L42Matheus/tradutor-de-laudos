@@ -38,6 +38,7 @@ Documentos ACEITOS:
 - Resultados de exames laboratoriais
 - Laudos de ultrassom, raio-x, tomografia, ressonancia
 - Prescricoes medicas
+- Receitas/laudos de saude mental (antidepressivos, ansioliticos, psiquiatria)
 
 Documentos NAO ACEITOS:
 - Contas de luz, agua, telefone
@@ -47,10 +48,12 @@ Documentos NAO ACEITOS:
 - Notas fiscais
 - Qualquer documento nao relacionado a saude
 
+IMPORTANTE: Se o documento contem medicamentos para ansiedade, depressao ou outros transtornos mentais (antidepressivos, ansioliticos, antipsicoticos, estabilizadores de humor), classifique como "saude_mental".
+
 Responda APENAS com JSON no formato:
 {
     "is_valid": true ou false,
-    "document_type": "laudo" ou "receita" ou null,
+    "document_type": "laudo" ou "receita" ou "saude_mental" ou null,
     "message": "explicacao breve"
 }
 
@@ -100,6 +103,7 @@ Documentos ACEITOS:
 - Resultados de exames laboratoriais
 - Laudos de ultrassom, raio-x, tomografia, ressonancia
 - Prescricoes medicas
+- Receitas/laudos de saude mental (antidepressivos, ansioliticos, psiquiatria)
 
 Documentos NAO ACEITOS:
 - Contas de luz, agua, telefone
@@ -110,10 +114,12 @@ Documentos NAO ACEITOS:
 - Fotos pessoais
 - Qualquer documento nao relacionado a saude
 
+IMPORTANTE: Se o documento contem medicamentos para ansiedade, depressao ou outros transtornos mentais (antidepressivos, ansioliticos, antipsicoticos, estabilizadores de humor), classifique como "saude_mental".
+
 Responda APENAS com JSON no formato:
 {
     "is_valid": true ou false,
-    "document_type": "laudo" ou "receita" ou null,
+    "document_type": "laudo" ou "receita" ou "saude_mental" ou null,
     "message": "explicacao breve"
 }"""
 

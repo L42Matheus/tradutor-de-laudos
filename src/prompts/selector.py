@@ -15,21 +15,22 @@ from .receitas import (
     PROMPT_RECEITA_CONTROLADA,
     PROMPT_RECEITA_ANTIBIOTICO
 )
+from .saude_mental import (
+    PROMPT_ANTIDEPRESSIVO,
+    PROMPT_ANSIOLITICO,
+    PROMPT_LAUDO_PSIQUIATRICO,
+    PROMPT_SAUDE_MENTAL_OUTROS
+)
 
 
 def get_prompt_by_type(tipo: str, categoria: str = DocumentCategory.LAUDO) -> str:
     """
     Retorna o prompt adequado baseado no tipo e categoria
-
-    Args:
-        tipo: String com o tipo especifico
-        categoria: 'laudo' ou 'receita'
-
-    Returns:
-        String com o prompt do sistema
     """
     if categoria == DocumentCategory.RECEITA:
         return _get_receita_prompt(tipo)
+    elif categoria == DocumentCategory.SAUDE_MENTAL:
+        return _get_saude_mental_prompt(tipo)
     else:
         return _get_laudo_prompt(tipo)
 
@@ -54,3 +55,14 @@ def _get_receita_prompt(tipo: str) -> str:
         "Receita de Antibiotico": PROMPT_RECEITA_ANTIBIOTICO
     }
     return tipo_map.get(tipo, PROMPT_RECEITA_SIMPLES)
+
+
+def _get_saude_mental_prompt(tipo: str) -> str:
+    """Retorna prompt para saude mental"""
+    tipo_map = {
+        "Receita de Antidepressivo": PROMPT_ANTIDEPRESSIVO,
+        "Receita de Ansiolitico": PROMPT_ANSIOLITICO,
+        "Laudo Psiquiatrico": PROMPT_LAUDO_PSIQUIATRICO,
+        "Outro": PROMPT_SAUDE_MENTAL_OUTROS
+    }
+    return tipo_map.get(tipo, PROMPT_SAUDE_MENTAL_OUTROS)

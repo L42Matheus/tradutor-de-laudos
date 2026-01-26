@@ -15,7 +15,7 @@ from .components import (
     show_theme_toggle,
     apply_custom_styles
 )
-from .apoio_emocional import show_apoio_emocional
+from .apoio_emocional import show_apoio_emocional, show_apoio_emocional_inline
 
 __all__ = [
     'show_header',

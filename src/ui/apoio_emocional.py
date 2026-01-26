@@ -122,3 +122,37 @@ def show_apoio_emocional():
                 st.caption(f"{recurso['contato']} - {recurso['descricao']}")
 
             st.warning("**Em crise? Ligue 188 (CVV) - 24 horas**")
+
+
+def show_apoio_emocional_inline():
+    """Exibe secao de apoio emocional inline (no resultado da traducao)"""
+    st.markdown("---")
+    st.markdown("### 💚 Apoio Emocional")
+    st.caption("⚠️ *Este conteudo nao substitui acompanhamento profissional*")
+
+    # Frase motivacional
+    frase = random.choice(FRASES_MOTIVACIONAIS)
+    st.info(f"💬 *\"{frase}\"*")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.markdown("**🧘 Exercicio de Respiracao**")
+        exercicio = random.choice(EXERCICIOS_RESPIRACAO)
+        st.markdown(f"**{exercicio['nome']}**")
+        st.caption(exercicio['descricao'])
+
+        st.markdown("**🎵 Musicas Relaxantes**")
+        for playlist in PLAYLISTS:
+            st.markdown(f"- [{playlist['nome']}]({playlist['url']})")
+
+    with col2:
+        st.markdown("**📹 Meditacao Guiada**")
+        for video in VIDEOS_MEDITACAO:
+            st.markdown(f"- [{video['nome']}]({video['url']})")
+
+        st.markdown("**📞 Precisa de Ajuda?**")
+        for recurso in RECURSOS_APOIO:
+            st.caption(f"**{recurso['nome']}**: {recurso['contato']}")
+
+    st.warning("**Em crise? Ligue 188 (CVV) - Atendimento 24 horas, gratuito**")
