@@ -14,7 +14,15 @@ APP_DIR = Path(__file__).parent.resolve()
 load_dotenv(APP_DIR / '.env')
 
 from src.config import DocumentCategory
-from src.services import MedicalTranslator, DocumentValidator, anonymize_text
+from src.services import (
+    MedicalTranslator,
+    DocumentValidator,
+    anonymize_text,
+    can_translate,
+    increment_usage,
+    show_usage_status,
+    show_limit_reached
+)
 from src.utils import process_uploaded_file
 from src.ui import (
     show_header,
@@ -79,9 +87,9 @@ def process_document(translator: MedicalTranslator, file_data: dict, texto: str,
 
 
 def main():
-    """Funcao principal da aplicacao"""
     apply_custom_styles()
     show_theme_toggle()
+    show_usage_status()
     show_header()
     show_terms()
 
@@ -146,6 +154,10 @@ def main():
     has_content = file_data or (texto and texto.strip())
 
     if traduzir_btn and has_content:
+        if not can_translate():
+            show_limit_reached()
+            return
+
         with st.spinner("Validando documento... ⏳"):
             validation = validate_document(validator, file_data, texto)
 
@@ -162,7 +174,8 @@ def main():
                 resultado = process_document(translator, file_data, texto, tipo, categoria)
 
                 if resultado:
-                    # Salva resultado no session_state
+                    if not resultado.get('from_cache'):
+                        increment_usage()
                     st.session_state.resultado = resultado
                     st.session_state.resultado_categoria = categoria
                     show_results(resultado, categoria)
