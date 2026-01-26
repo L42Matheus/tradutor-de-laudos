@@ -114,7 +114,7 @@ def main():
     translator = MedicalTranslator(api_key)
     validator = DocumentValidator(api_key)
 
-    # Selecao de categoria e tipo
+    # Selecao de categoria e tipo (pode ser ajustado automaticamente)
     categoria = show_category_selector()
     tipo = show_type_selector(categoria)
 
@@ -169,7 +169,7 @@ def main():
 
             st.success(f"✅ Documento validado: {validation['message']}")
 
-            # Verifica se categoria selecionada corresponde ao documento
+            # Verifica se categoria selecionada corresponde ao documento detectado
             detected_type = validation.get('document_type')
             if detected_type:
                 detected_type = detected_type.lower()
