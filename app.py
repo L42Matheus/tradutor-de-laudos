@@ -171,11 +171,13 @@ def main():
 
             # Verifica se categoria selecionada corresponde ao documento
             detected_type = validation.get('document_type')
-            if detected_type and detected_type != categoria:
-                tipo_nome = "Receita Médica" if detected_type == "receita" else "Laudo Médico"
-                st.info(f"📋 Documento detectado como **{tipo_nome}**. Ajustando automaticamente.")
-                categoria = detected_type
-                tipo = "Receita Simples" if detected_type == "receita" else "Outro"
+            if detected_type:
+                detected_type = detected_type.lower()
+                if detected_type != categoria:
+                    tipo_nome = "Receita Médica" if detected_type == "receita" else "Laudo Médico"
+                    st.info(f"📋 Documento detectado como **{tipo_nome}**. Ajustando automaticamente.")
+                    categoria = detected_type
+                    tipo = "Receita Simples" if detected_type == "receita" else "Outro"
 
         with st.spinner("Traduzindo documento... ⏳"):
             try:
