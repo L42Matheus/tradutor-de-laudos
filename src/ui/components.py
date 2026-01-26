@@ -5,7 +5,6 @@ Componentes de interface do usuario
 import streamlit as st
 from src.config import DocumentCategory, TIPOS_LAUDO, TIPOS_RECEITA, TIPOS_SAUDE_MENTAL, ALLOWED_FILE_TYPES
 from src.ui.styles import get_custom_css, get_header_html, get_footer_html
-from src.ui.apoio_emocional import show_apoio_emocional_inline
 
 
 def init_theme():
@@ -209,6 +208,7 @@ def show_results(resultado: dict, categoria: str):
 
     # Mostra apoio emocional para categoria saude mental ou medicamentos psiquiatricos
     if categoria == DocumentCategory.SAUDE_MENTAL or resultado.get('is_saude_mental'):
+        from src.ui.apoio_emocional import show_apoio_emocional_inline
         show_apoio_emocional_inline()
 
 
