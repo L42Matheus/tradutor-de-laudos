@@ -35,7 +35,8 @@ from src.ui import (
     show_text_input,
     show_results,
     show_theme_toggle,
-    apply_custom_styles
+    apply_custom_styles,
+    show_apoio_emocional
 )
 
 # Configuracao da pagina
@@ -90,6 +91,7 @@ def main():
     apply_custom_styles()
     show_theme_toggle()
     show_usage_status()
+    show_apoio_emocional()
     show_header()
     show_terms()
 

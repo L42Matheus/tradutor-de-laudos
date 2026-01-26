@@ -15,6 +15,7 @@ from .components import (
     show_theme_toggle,
     apply_custom_styles
 )
+from .apoio_emocional import show_apoio_emocional
 
 __all__ = [
     'show_header',
@@ -27,5 +28,6 @@ __all__ = [
     'show_text_input',
     'show_results',
     'show_theme_toggle',
-    'apply_custom_styles'
+    'apply_custom_styles',
+    'show_apoio_emocional'
 ]
