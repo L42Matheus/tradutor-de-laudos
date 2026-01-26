@@ -162,31 +162,35 @@ def show_text_input() -> str:
 
 def show_results(resultado: dict, categoria: str):
     """Exibe resultados da traducao"""
-    # Indicador de cache
     if resultado.get('from_cache'):
         st.success("✅ Traducao concluida! (recuperado do cache)")
     else:
         st.success("✅ Traducao concluida!")
 
-    # Labels baseados na categoria
     if categoria == DocumentCategory.RECEITA:
-        tab_labels = ["💊 Resumo", "📋 Como Tomar", "📚 Termos"]
+        tab_labels = ["💊 Resumo", "📋 Como Tomar", "💡 Entenda Facil", "📚 Termos"]
     else:
-        tab_labels = ["📋 Resumo Simples", "🔍 Explicacao Detalhada", "📚 Termos Tecnicos"]
+        tab_labels = ["📋 Resumo", "🔍 Detalhado", "💡 Entenda Facil", "📚 Termos"]
 
-    tab1, tab2, tab3 = st.tabs(tab_labels)
+    tab1, tab2, tab3, tab4 = st.tabs(tab_labels)
 
     with tab1:
-        st.markdown("### " + tab_labels[0].split(" ", 1)[1])
+        st.markdown("### Resumo")
         st.markdown(resultado.get('resumo', 'Nao disponivel'))
         _show_copy_button(resultado.get('resumo', ''), "resumo")
 
     with tab2:
-        st.markdown("### " + tab_labels[1].split(" ", 1)[1])
+        st.markdown("### Explicacao Detalhada")
         st.markdown(resultado.get('detalhado', 'Nao disponivel'))
         _show_copy_button(resultado.get('detalhado', ''), "detalhado")
 
     with tab3:
+        st.markdown("### Entenda Facil")
+        st.markdown("*Explicacao simples, como se fosse para uma crianca*")
+        st.markdown(resultado.get('entenda_facil', 'Nao disponivel'))
+        _show_copy_button(resultado.get('entenda_facil', ''), "entenda_facil")
+
+    with tab4:
         st.markdown("### Glossario")
         st.markdown(resultado.get('glossario', 'Nao disponivel'))
         _show_copy_button(resultado.get('glossario', ''), "glossario")
