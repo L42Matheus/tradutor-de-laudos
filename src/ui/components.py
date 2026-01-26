@@ -198,8 +198,6 @@ def show_results(resultado: dict, categoria: str):
     if resultado.get('alertas'):
         st.warning("⚠️ " + resultado['alertas'])
 
-    _show_copy_all_button(resultado)
-
     st.info("💡 **Lembre-se:** Esta traducao e apenas informativa. Sempre consulte seu medico!")
 
 
@@ -210,23 +208,3 @@ def _show_copy_button(text: str, key: str):
         st.caption("Texto acima pronto para copiar (Ctrl+C)")
 
 
-def _show_copy_all_button(resultado: dict):
-    """Exibe botao para copiar todo o resultado"""
-    full_text = f"""RESUMO:
-{resultado.get('resumo', '')}
-
-DETALHADO:
-{resultado.get('detalhado', '')}
-
-ENTENDA FACIL:
-{resultado.get('entenda_facil', '')}
-
-GLOSSARIO:
-{resultado.get('glossario', '')}
-"""
-    if resultado.get('alertas'):
-        full_text += f"\nALERTAS:\n{resultado['alertas']}"
-
-    with st.expander("📋 Copiar resultado completo"):
-        st.code(full_text, language=None)
-        st.caption("Selecione todo o texto acima e copie (Ctrl+A, Ctrl+C)")

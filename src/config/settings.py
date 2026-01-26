@@ -49,6 +49,7 @@ CACHE_ENABLED = True
 CACHE_TTL_SECONDS = 3600  # 1 hora
 CACHE_MAX_SIZE = 100  # Maximo de entradas em memoria
 
-# Limites de uso (protecao de custos)
-MAX_TEXT_LENGTH = 10000  # Caracteres
+# Limites de uso
+MAX_TEXT_LENGTH = 10000
 MAX_REQUESTS_PER_SESSION = 20
+FREE_TRANSLATIONS_LIMIT = 3
