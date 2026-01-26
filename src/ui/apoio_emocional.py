@@ -87,9 +87,10 @@ def show_apoio_emocional():
 
             st.markdown(f"💬 *\"{FRASES_MOTIVACIONAIS[st.session_state.frase_idx]}\"*")
 
-            if st.button("🔄 Nova frase", key="nova_frase", use_container_width=True):
+            def _trocar_frase():
                 st.session_state.frase_idx = random.randint(0, len(FRASES_MOTIVACIONAIS) - 1)
-                st.rerun()
+
+            st.button("🔄 Nova frase", key="nova_frase", use_container_width=True, on_click=_trocar_frase)
 
             st.divider()
 
