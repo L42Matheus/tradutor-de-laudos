@@ -1,5 +1,5 @@
-import { useCallback, useState } from 'react'
-import { Upload, File, X, Image } from 'lucide-react'
+import { useCallback, useState, useEffect } from 'react'
+import { Upload, File, X, Image, FileText } from 'lucide-react'
 import { clsx } from 'clsx'
 
 interface FileUploaderProps {
@@ -21,6 +21,18 @@ const MAX_SIZE_MB = 10
 export function FileUploader({ onFileSelect, selectedFile }: FileUploaderProps) {
   const [isDragging, setIsDragging] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+
+  // Gerar preview quando arquivo for selecionado
+  useEffect(() => {
+    if (selectedFile && selectedFile.type.startsWith('image/')) {
+      const url = URL.createObjectURL(selectedFile)
+      setPreviewUrl(url)
+      return () => URL.revokeObjectURL(url)
+    } else {
+      setPreviewUrl(null)
+    }
+  }, [selectedFile])
 
   const validateFile = (file: File): boolean => {
     setError(null)
@@ -73,10 +85,12 @@ export function FileUploader({ onFileSelect, selectedFile }: FileUploaderProps) 
 
   const clearFile = () => {
     onFileSelect(null)
+    setPreviewUrl(null)
     setError(null)
   }
 
   const isImage = selectedFile?.type.startsWith('image/')
+  const isPdf = selectedFile?.type === 'application/pdf'
 
   return (
     <div>
@@ -85,12 +99,36 @@ export function FileUploader({ onFileSelect, selectedFile }: FileUploaderProps) 
       </label>
 
       {selectedFile ? (
-        <div className="relative p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-3">
+        <div className="relative bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          {/* Preview da imagem */}
+          {isImage && previewUrl && (
+            <div className="relative w-full bg-gray-100 dark:bg-gray-900 flex items-center justify-center p-4">
+              <img
+                src={previewUrl}
+                alt="Preview do documento"
+                className="max-h-64 max-w-full object-contain rounded shadow-sm"
+              />
+            </div>
+          )}
+
+          {/* Preview do PDF (ícone grande) */}
+          {isPdf && (
+            <div className="w-full bg-gray-100 dark:bg-gray-900 flex items-center justify-center p-8">
+              <div className="text-center">
+                <FileText className="mx-auto text-red-500" size={48} />
+                <p className="text-sm text-gray-500 mt-2">Documento PDF</p>
+              </div>
+            </div>
+          )}
+
+          {/* Informações do arquivo */}
+          <div className="p-4 flex items-center gap-3">
             {isImage ? (
-              <Image className="text-green-500" size={24} />
+              <Image className="text-green-500 flex-shrink-0" size={20} />
+            ) : isPdf ? (
+              <FileText className="text-red-500 flex-shrink-0" size={20} />
             ) : (
-              <File className="text-primary-500" size={24} />
+              <File className="text-primary-500 flex-shrink-0" size={20} />
             )}
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
@@ -102,7 +140,7 @@ export function FileUploader({ onFileSelect, selectedFile }: FileUploaderProps) 
             </div>
             <button
               onClick={clearFile}
-              className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full"
+              className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors"
               aria-label="Remover arquivo"
             >
               <X size={18} />
