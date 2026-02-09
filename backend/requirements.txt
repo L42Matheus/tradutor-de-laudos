@@ -1,0 +1,27 @@
+# FastAPI e servidor
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+python-multipart>=0.0.6
+
+# Pydantic e configurações
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
+
+# Anthropic API
+anthropic>=0.20.0
+
+# Processamento de arquivos
+PyPDF2>=3.0.0
+Pillow>=10.0.0
+
+# Utilitários
+python-dotenv>=1.0.0
+
+# Testes
+pytest>=8.0.0
+pytest-asyncio>=0.23.0
+httpx>=0.26.0
+
+# Desenvolvimento
+black>=24.0.0
+isort>=5.13.0

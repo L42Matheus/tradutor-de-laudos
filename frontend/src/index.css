@@ -1,0 +1,61 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base styles */
+body {
+  @apply bg-health-light dark:bg-health-dark text-gray-900 dark:text-gray-100;
+  @apply font-sans antialiased;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100 dark:bg-gray-800;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 dark:bg-gray-600 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-400 dark:bg-gray-500;
+}
+
+/* Focus styles */
+*:focus {
+  @apply outline-none ring-2 ring-primary-500 ring-offset-2;
+}
+
+/* Tab panel animations */
+.tab-panel-enter {
+  @apply opacity-0 translate-y-2;
+}
+
+.tab-panel-enter-active {
+  @apply opacity-100 translate-y-0 transition-all duration-200;
+}
+
+/* Loading spinner */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Gradient header */
+.gradient-header {
+  @apply bg-gradient-to-r from-primary-600 to-primary-800;
+}
+
+.dark .gradient-header {
+  @apply bg-gradient-to-r from-purple-900 to-indigo-900;
+}

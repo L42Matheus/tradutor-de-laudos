@@ -29,3 +29,30 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Node modules
+node_modules/
+
+# Build outputs
+dist/
+build/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+
+# Backend
+backend/.env
+backend/.env.local
+backend/__pycache__/
+backend/.pytest_cache/
+
+# Test coverage
+coverage/
+.coverage
+htmlcov/
+
+# Docker
+*.log
