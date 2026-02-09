@@ -22,16 +22,20 @@ export function FileUploader({ onFileSelect, selectedFile }: FileUploaderProps) 
   const [isDragging, setIsDragging] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false)
 
   // Gerar preview quando arquivo for selecionado
   useEffect(() => {
-    if (selectedFile && selectedFile.type.startsWith('image/')) {
+    if (
+      selectedFile &&
+      (selectedFile.type.startsWith('image/') ||
+        selectedFile.type === 'application/pdf')
+    ) {
       const url = URL.createObjectURL(selectedFile)
       setPreviewUrl(url)
       return () => URL.revokeObjectURL(url)
-    } else {
-      setPreviewUrl(null)
     }
+    setPreviewUrl(null)
   }, [selectedFile])
 
   const validateFile = (file: File): boolean => {
@@ -87,6 +91,7 @@ export function FileUploader({ onFileSelect, selectedFile }: FileUploaderProps) 
     onFileSelect(null)
     setPreviewUrl(null)
     setError(null)
+    setIsPreviewOpen(false)
   }
 
   const isImage = selectedFile?.type.startsWith('image/')
@@ -102,22 +107,44 @@ export function FileUploader({ onFileSelect, selectedFile }: FileUploaderProps) 
         <div className="relative bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
           {/* Preview da imagem */}
           {isImage && previewUrl && (
-            <div className="relative w-full bg-gray-100 dark:bg-gray-900 flex items-center justify-center p-4">
+            <div className="relative w-full bg-gray-100 dark:bg-gray-900 flex items-center justify-center p-2 sm:p-4">
               <img
                 src={previewUrl}
                 alt="Preview do documento"
-                className="max-h-64 max-w-full object-contain rounded shadow-sm"
+                className="max-h-[70vh] w-full object-contain rounded shadow-sm"
               />
+              <button
+                onClick={() => setIsPreviewOpen(true)}
+                className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded"
+              >
+                Ampliar
+              </button>
             </div>
           )}
 
-          {/* Preview do PDF (ícone grande) */}
+          {/* Preview do PDF */}
           {isPdf && (
-            <div className="w-full bg-gray-100 dark:bg-gray-900 flex items-center justify-center p-8">
-              <div className="text-center">
-                <FileText className="mx-auto text-red-500" size={48} />
-                <p className="text-sm text-gray-500 mt-2">Documento PDF</p>
-              </div>
+            <div className="relative w-full bg-gray-100 dark:bg-gray-900 p-2 sm:p-4">
+              {previewUrl ? (
+                <iframe
+                  src={previewUrl}
+                  title="Preview do PDF"
+                  className="w-full h-[70vh] rounded border border-gray-200 dark:border-gray-700"
+                />
+              ) : (
+                <div className="flex items-center justify-center p-8">
+                  <div className="text-center">
+                    <FileText className="mx-auto text-red-500" size={48} />
+                    <p className="text-sm text-gray-500 mt-2">Documento PDF</p>
+                  </div>
+                </div>
+              )}
+              <button
+                onClick={() => setIsPreviewOpen(true)}
+                className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded"
+              >
+                Ampliar
+              </button>
             </div>
           )}
 
@@ -178,6 +205,33 @@ export function FileUploader({ onFileSelect, selectedFile }: FileUploaderProps) 
           <p className="text-xs text-gray-500 mt-1">
             PDF, TXT ou imagens (PNG, JPG) - Máx. {MAX_SIZE_MB}MB
           </p>
+        </div>
+      )}
+
+      {/* Preview em tela cheia */}
+      {isPreviewOpen && previewUrl && (
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+          <div className="relative w-full max-w-6xl max-h-[90vh]">
+            <button
+              onClick={() => setIsPreviewOpen(false)}
+              className="absolute -top-10 right-0 text-white text-sm px-3 py-1 bg-black/60 rounded"
+            >
+              Fechar
+            </button>
+            {isImage ? (
+              <img
+                src={previewUrl}
+                alt="Preview do documento"
+                className="w-full max-h-[90vh] object-contain rounded"
+              />
+            ) : isPdf ? (
+              <iframe
+                src={previewUrl}
+                title="Preview do PDF"
+                className="w-full h-[90vh] rounded border border-gray-700"
+              />
+            ) : null}
+          </div>
         </div>
       )}
 
