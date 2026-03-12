@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { translateText, translateFile, validateText, validateFile } from '../services/api'
 import { useUsage } from '../context/UsageContext'
-import type { DocumentCategory, TranslationResult, ValidationResult } from '../types/api'
+import type { DocumentCategory, TranslationResult } from '../types/api'
 
 interface UseTranslateOptions {
   onSuccess?: (result: TranslationResult) => void

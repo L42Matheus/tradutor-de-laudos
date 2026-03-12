@@ -1,4 +1,4 @@
-import type { DocumentCategory, DocumentType } from '../../types/api'
+import type { DocumentCategory } from '../../types/api'
 import {
   LAUDO_TYPE_LABELS,
   RECEITA_TYPE_LABELS,

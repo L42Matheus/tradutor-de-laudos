@@ -1,7 +1,6 @@
 import { Phone, ExternalLink, Heart, Shield } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { getResources, getRandomQuote } from '../../services/api'
-import { Card } from '../ui/Card'
 
 export function EmotionalSupportInline() {
   const { data: resources } = useQuery({

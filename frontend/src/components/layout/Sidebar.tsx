@@ -1,4 +1,4 @@
-import { X, Heart, Phone, ExternalLink } from 'lucide-react'
+import { X, Phone } from 'lucide-react'
 import { useUsage } from '../../context/UsageContext'
 import { EmotionalSupport } from '../support/EmotionalSupport'
 

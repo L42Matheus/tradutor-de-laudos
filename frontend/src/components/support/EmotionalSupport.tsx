@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Heart, RefreshCw, Wind, ExternalLink } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { getRandomQuote, getExercises } from '../../services/api'
@@ -7,7 +7,7 @@ import { Button } from '../ui/Button'
 export function EmotionalSupport() {
   const [quoteKey, setQuoteKey] = useState(0)
 
-  const { data: quote, isLoading: quoteLoading, refetch: refetchQuote } = useQuery({
+  const { data: quote, isLoading: quoteLoading } = useQuery({
     queryKey: ['quote', quoteKey],
     queryFn: getRandomQuote,
     staleTime: Infinity,
