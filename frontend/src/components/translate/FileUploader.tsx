@@ -180,7 +180,7 @@ export function FileUploader({ onFileSelect, selectedFile }: FileUploaderProps) 
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           className={clsx(
-            'relative border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer',
+            'relative border-2 border-dashed rounded-lg p-4 sm:p-8 text-center transition-colors cursor-pointer',
             isDragging
               ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
               : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
@@ -199,11 +199,11 @@ export function FileUploader({ onFileSelect, selectedFile }: FileUploaderProps) 
             )}
             size={32}
           />
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            Arraste um arquivo ou clique para selecionar
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+            Arraste ou clique para selecionar
           </p>
-          <p className="text-xs text-gray-500 mt-1">
-            PDF, TXT ou imagens (PNG, JPG) - Máx. {MAX_SIZE_MB}MB
+          <p className="text-[10px] sm:text-xs text-gray-500 mt-1">
+            PDF, TXT, imagens - Máx. {MAX_SIZE_MB}MB
           </p>
         </div>
       )}

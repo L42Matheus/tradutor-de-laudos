@@ -16,7 +16,7 @@ function App() {
       <div className="flex flex-1">
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-        <main className="flex-1 p-4 md:p-6 lg:p-8">
+        <main className="flex-1 p-2 sm:p-4 md:p-6 lg:p-8">
           {!termsAccepted ? (
             <TermsAcceptance onAccept={() => setTermsAccepted(true)} />
           ) : (

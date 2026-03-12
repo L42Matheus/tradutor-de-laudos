@@ -70,7 +70,7 @@ export function HomePage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="max-w-3xl mx-auto space-y-4 sm:space-y-6">
       {/* Limite atingido */}
       {!canTranslate && (
         <Alert variant="warning" title="Limite de traduções atingido">
@@ -119,28 +119,28 @@ export function HomePage() {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Como deseja enviar o documento?
                 </label>
-                <div className="flex gap-3">
+                <div className="flex gap-2 sm:gap-3">
                   <button
                     onClick={() => setInputMethod('text')}
-                    className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-colors ${
+                    className={`flex-1 flex items-center justify-center gap-1.5 sm:gap-2 p-2 sm:p-3 rounded-lg border-2 transition-colors text-sm sm:text-base ${
                       inputMethod === 'text'
                         ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
                         : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400'
                     }`}
                   >
-                    <Type size={20} />
+                    <Type size={18} />
                     <span>Colar texto</span>
                   </button>
                   <button
                     onClick={() => setInputMethod('file')}
-                    className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-colors ${
+                    className={`flex-1 flex items-center justify-center gap-1.5 sm:gap-2 p-2 sm:p-3 rounded-lg border-2 transition-colors text-sm sm:text-base ${
                       inputMethod === 'file'
                         ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
                         : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400'
                     }`}
                   >
-                    <FileText size={20} />
-                    <span>Enviar arquivo</span>
+                    <FileText size={18} />
+                    <span>Arquivo</span>
                   </button>
                 </div>
               </div>

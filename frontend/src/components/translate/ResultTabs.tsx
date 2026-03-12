@@ -114,7 +114,7 @@ export function ResultTabs({ result, anonymizedFields }: ResultTabsProps) {
 
   return (
     <Card>
-      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+      <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-3 sm:mb-4">
         Resultado da Tradução
       </h3>
 
