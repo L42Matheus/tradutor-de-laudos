@@ -14,8 +14,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copiar código da aplicação
 COPY . .
 
-# Expor porta
+# Expor porta (Railway usa $PORT)
 EXPOSE 8000
 
-# Comando padrão
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Comando padrão (Railway sobrescreve via railway.toml)
+CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
