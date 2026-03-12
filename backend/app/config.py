@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     # Limits
     max_text_length: int = 10000
     max_requests_per_session: int = 20
-    free_translations_limit: int = 1
+    free_translations_limit: int = 5
 
     # File upload
     max_file_size_mb: int = 10

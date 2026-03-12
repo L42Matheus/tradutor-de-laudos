@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Send, FileText, Type } from 'lucide-react'
+import { Send, FileText, Type, ArrowLeft } from 'lucide-react'
 import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { Alert } from '../components/ui/Alert'
@@ -82,9 +82,14 @@ export function HomePage() {
       {/* Resultado */}
       {result ? (
         <div className="space-y-4">
+          <div className="flex justify-start">
+            <Button onClick={handleReset} variant="outline" leftIcon={<ArrowLeft size={18} />}>
+              Voltar
+            </Button>
+          </div>
           <ResultTabs result={result} anonymizedFields={anonymizedFields} />
           <div className="flex justify-center">
-            <Button onClick={handleReset} variant="outline">
+            <Button onClick={handleReset} variant="primary" leftIcon={<ArrowLeft size={18} />}>
               Traduzir outro documento
             </Button>
           </div>
