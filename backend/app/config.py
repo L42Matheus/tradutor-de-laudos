@@ -21,7 +21,12 @@ class Settings(BaseSettings):
     temperature: float = 0.3
 
     # CORS
-    cors_origins: list[str] = ["http://localhost:5173", "http://localhost:3000"]
+    cors_origins: list[str] = [
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "https://traduz-saude-app.up.railway.app",
+        "*"
+    ]
 
     # Cache
     cache_enabled: bool = True
