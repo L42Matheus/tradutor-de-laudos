@@ -97,7 +97,7 @@ class DocumentValidator:
                 "message": rejection_reason,
             }
 
-        prompt = STRICT_VALIDATION_RULES.format(input_kind="texto") + "\n\nTEXTO PARA ANALISE:\n"
+        prompt = STRICT_VALIDATION_RULES.replace("{input_kind}", "texto") + "\n\nTEXTO PARA ANALISE:\n"
 
         try:
             response = self.client.messages.create(
@@ -130,7 +130,7 @@ class DocumentValidator:
                 'message': str
             }
         """
-        prompt = STRICT_VALIDATION_RULES.format(input_kind="imagem")
+        prompt = STRICT_VALIDATION_RULES.replace("{input_kind}", "imagem")
 
         try:
             response = self.client.messages.create(
