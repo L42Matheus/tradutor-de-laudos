@@ -13,6 +13,24 @@ export function useTranslate(options?: UseTranslateOptions) {
   const { canTranslate, incrementTranslation } = useUsage()
   const [anonymizedFields, setAnonymizedFields] = useState<string[]>([])
 
+  const ensureDocumentIsValid = async (
+    input: { text: string } | { file: File }
+  ) => {
+    const response = 'text' in input
+      ? await validateText(input.text)
+      : await validateFile(input.file)
+
+    if (!response.success || !response.data) {
+      throw new Error(response.error || 'Erro ao validar documento')
+    }
+
+    if (!response.data.is_valid) {
+      throw new Error(`Documento nao aceito: ${response.data.message}`)
+    }
+
+    return response.data
+  }
+
   const translateTextMutation = useMutation({
     mutationFn: async ({
       text,
@@ -24,8 +42,10 @@ export function useTranslate(options?: UseTranslateOptions) {
       documentType: string
     }) => {
       if (!canTranslate) {
-        throw new Error('Limite de traduções atingido')
+        throw new Error('Limite de traducoes atingido')
       }
+
+      await ensureDocumentIsValid({ text })
 
       const response = await translateText({
         text,
@@ -57,8 +77,10 @@ export function useTranslate(options?: UseTranslateOptions) {
       documentType: string
     }) => {
       if (!canTranslate) {
-        throw new Error('Limite de traduções atingido')
+        throw new Error('Limite de traducoes atingido')
       }
+
+      await ensureDocumentIsValid({ file })
 
       const response = await translateFile(file, category, documentType)
 
@@ -100,21 +122,14 @@ export function useTranslate(options?: UseTranslateOptions) {
   })
 
   return {
-    // Translate functions
     translateText: translateTextMutation.mutateAsync,
     translateFile: translateFileMutation.mutateAsync,
-
-    // Validate functions
     validateText: validateTextMutation.mutateAsync,
     validateFile: validateFileMutation.mutateAsync,
-
-    // State
     isTranslating: translateTextMutation.isPending || translateFileMutation.isPending,
     isValidating: validateTextMutation.isPending || validateFileMutation.isPending,
     error: translateTextMutation.error || translateFileMutation.error,
     anonymizedFields,
-
-    // Reset
     reset: () => {
       translateTextMutation.reset()
       translateFileMutation.reset()
