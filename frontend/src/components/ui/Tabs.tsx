@@ -38,11 +38,7 @@ export function Tabs({ tabs, defaultTab }: TabsProps) {
               <span className="[&>svg]:w-4 [&>svg]:h-4 sm:[&>svg]:w-[16px] sm:[&>svg]:h-[16px]">
                 {tab.icon}
               </span>
-              <span className="hidden xs:inline sm:inline">{tab.label}</span>
-              {/* Show abbreviated label on very small screens */}
-              <span className="xs:hidden">
-                {tab.label.split(' ')[0]}
-              </span>
+              <span>{tab.label}</span>
             </button>
           ))}
         </div>
