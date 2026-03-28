@@ -120,14 +120,19 @@ class CacheKeyGenerator:
     """Gera chaves de cache baseadas no conteudo"""
 
     @staticmethod
-    def generate(content: str, tipo: str, categoria: str) -> str:
-        key_data = f"{content}:{tipo}:{categoria}"
+    def generate(content: str, tipo: str, categoria: str, namespace: str = "translation") -> str:
+        key_data = f"{namespace}:{content}:{tipo}:{categoria}"
         return hashlib.sha256(key_data.encode()).hexdigest()[:32]
 
     @staticmethod
-    def generate_from_image(image_base64: str, tipo: str, categoria: str) -> str:
-        image_hash = hashlib.md5(image_base64[:1000].encode()).hexdigest()
-        return CacheKeyGenerator.generate(image_hash, tipo, categoria)
+    def generate_from_image(
+        image_base64: str,
+        tipo: str,
+        categoria: str,
+        namespace: str = "translation",
+    ) -> str:
+        image_hash = hashlib.sha256(image_base64.encode()).hexdigest()
+        return CacheKeyGenerator.generate(image_hash, tipo, categoria, namespace=namespace)
 
 
 # Singleton do cache

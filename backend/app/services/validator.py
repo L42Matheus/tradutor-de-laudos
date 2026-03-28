@@ -10,6 +10,7 @@ import unicodedata
 import anthropic
 
 from app.config import get_settings
+from app.services.cache import CacheKeyGenerator, get_cache
 
 
 STRICT_VALIDATION_RULES = """
@@ -78,6 +79,8 @@ class DocumentValidator:
         settings = get_settings()
         self.client = anthropic.Anthropic(api_key=api_key or settings.anthropic_api_key)
         self.model = settings.claude_model
+        self.use_cache = settings.cache_enabled
+        self._cache = get_cache() if self.use_cache else None
 
     def validate_text(self, text: str) -> dict:
         """
@@ -98,6 +101,18 @@ class DocumentValidator:
                 "message": rejection_reason,
             }
 
+        cache_key = None
+        if self.use_cache and self._cache:
+            cache_key = CacheKeyGenerator.generate(
+                content=text,
+                tipo="validation",
+                categoria="text",
+                namespace="validation",
+            )
+            cached_result = self._cache.get(cache_key)
+            if cached_result:
+                return cached_result
+
         prompt = STRICT_VALIDATION_RULES.replace("{input_kind}", "texto") + "\n\nTEXTO PARA ANALISE:\n"
 
         try:
@@ -111,7 +126,10 @@ class DocumentValidator:
             )
 
             response_text = response.content[0].text
-            return self._parse_response(response_text)
+            result = self._parse_response(response_text)
+            if self.use_cache and self._cache and cache_key:
+                self._cache.set(cache_key, result)
+            return result
 
         except Exception as e:
             return {
@@ -131,6 +149,18 @@ class DocumentValidator:
                 'message': str
             }
         """
+        cache_key = None
+        if self.use_cache and self._cache:
+            cache_key = CacheKeyGenerator.generate_from_image(
+                image_base64=image_base64,
+                tipo="validation",
+                categoria=media_type,
+                namespace="validation",
+            )
+            cached_result = self._cache.get(cache_key)
+            if cached_result:
+                return cached_result
+
         prompt = STRICT_VALIDATION_RULES.replace("{input_kind}", "imagem")
 
         try:
@@ -160,7 +190,10 @@ class DocumentValidator:
             )
 
             response_text = response.content[0].text
-            return self._parse_response(response_text)
+            result = self._parse_response(response_text)
+            if self.use_cache and self._cache and cache_key:
+                self._cache.set(cache_key, result)
+            return result
 
         except Exception as e:
             return {

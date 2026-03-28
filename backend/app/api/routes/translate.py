@@ -8,6 +8,7 @@ from app.models.enums import DocumentCategory
 from app.models.requests import TranslateTextRequest
 from app.models.responses import TranslateResponse, TranslationResult
 from app.services.anonymizer import anonymize_text
+from app.services.authorship_detector import ProfessionalAuthorshipDetector
 from app.services.file_processor import process_uploaded_file
 from app.services.translator import MedicalTranslator
 from app.services.validator import DocumentValidator
@@ -41,6 +42,21 @@ def _validate_processed_file(validator: DocumentValidator, file_data: dict) -> d
     }
 
 
+def _detect_authorship_for_file(detector: ProfessionalAuthorshipDetector, file_data: dict) -> dict:
+    """Detecta indicios de autoria profissional no arquivo processado."""
+    if file_data["type"] == "text":
+        return detector.detect_from_text(file_data["content"])
+    if file_data["type"] == "image":
+        return detector.detect_from_image(
+            image_base64=file_data["content"],
+            media_type=file_data["media_type"],
+        )
+    return {
+        "professional_authorship_detected": False,
+        "professional_authorship_evidence": [],
+    }
+
+
 @router.post("/text", response_model=TranslateResponse)
 async def translate_text(request: TranslateTextRequest) -> TranslateResponse:
     """
@@ -62,12 +78,14 @@ async def translate_text(request: TranslateTextRequest) -> TranslateResponse:
 
     try:
         validator = DocumentValidator()
+        detector = ProfessionalAuthorshipDetector()
         validation = validator.validate_text(request.text)
         if not validation.get("is_valid"):
             return _build_validation_error(
                 validation.get("message", "Documento fora do escopo medico")
             )
 
+        authorship = detector.detect_from_text(request.text)
         anonymized_text, anonymized_fields = anonymize_text(request.text)
 
         translator = MedicalTranslator()
@@ -86,7 +104,10 @@ async def translate_text(request: TranslateTextRequest) -> TranslateResponse:
                 glossario=result.get("glossario", {}),
                 alertas=result.get("alertas", []),
                 is_saude_mental=result.get("is_saude_mental", False)
-                or request.category == DocumentCategory.SAUDE_MENTAL
+                or request.category == DocumentCategory.SAUDE_MENTAL,
+                from_cache=result.get("from_cache", False),
+                professional_authorship_detected=authorship["professional_authorship_detected"],
+                professional_authorship_evidence=authorship["professional_authorship_evidence"],
             ),
             anonymized_fields=anonymized_fields
         )
@@ -135,6 +156,7 @@ async def translate_file(
             )
 
         validator = DocumentValidator()
+        detector = ProfessionalAuthorshipDetector()
         validation = _validate_processed_file(validator, file_data)
         if not validation.get("is_valid"):
             return _build_validation_error(
@@ -142,6 +164,7 @@ async def translate_file(
             )
 
         translator = MedicalTranslator()
+        authorship = _detect_authorship_for_file(detector, file_data)
         anonymized_fields = []
 
         if file_data["type"] == "text":
@@ -175,7 +198,10 @@ async def translate_file(
                 glossario=result.get("glossario", {}),
                 alertas=result.get("alertas", []),
                 is_saude_mental=result.get("is_saude_mental", False)
-                or category == DocumentCategory.SAUDE_MENTAL
+                or category == DocumentCategory.SAUDE_MENTAL,
+                from_cache=result.get("from_cache", False),
+                professional_authorship_detected=authorship["professional_authorship_detected"],
+                professional_authorship_evidence=authorship["professional_authorship_evidence"],
             ),
             anonymized_fields=anonymized_fields
         )
