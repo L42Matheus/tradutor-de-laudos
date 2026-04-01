@@ -31,6 +31,7 @@ def test_translate_text_endpoint_exists(client, sample_medical_text, mock_transl
                 "glossario": {},
                 "alertas": [],
                 "is_saude_mental": False,
+                "from_cache": False,
             }
 
     monkeypatch.setattr(translate_route, "DocumentValidator", FakeValidator)
@@ -65,6 +66,7 @@ def test_translate_text_returns_expected_structure(client, sample_medical_text, 
                 "glossario": {"Hemacias": "Celulas vermelhas"},
                 "alertas": ["Nenhum"],
                 "is_saude_mental": False,
+                "from_cache": False,
             }
 
     monkeypatch.setattr(translate_route, "DocumentValidator", FakeValidator)
@@ -87,6 +89,9 @@ def test_translate_text_returns_expected_structure(client, sample_medical_text, 
     assert "glossario" in result
     assert "alertas" in result
     assert "is_saude_mental" in result
+    assert "from_cache" in result
+    assert "professional_authorship_detected" in result
+    assert "professional_authorship_evidence" in result
 
 
 def test_translate_text_validates_minimum_length(client):
@@ -130,6 +135,7 @@ def test_translate_text_saude_mental_flag(client, sample_medical_text, mock_tran
                 "glossario": {},
                 "alertas": [],
                 "is_saude_mental": True,
+                "from_cache": False,
             }
 
     monkeypatch.setattr(translate_route, "DocumentValidator", FakeValidator)
@@ -162,6 +168,7 @@ def test_translate_file_endpoint_exists(client, mock_translate_dependencies, mon
                 "glossario": {},
                 "alertas": [],
                 "is_saude_mental": False,
+                "from_cache": False,
             }
 
     async def fake_process_uploaded_file(file):
@@ -218,3 +225,40 @@ def test_translate_text_rejects_non_medical_document(
     data = response.json()
     assert data["success"] is False
     assert "Documento nao aceito" in data["error"]
+
+
+def test_translate_text_returns_authorship_evidence(client, mock_translate_dependencies, monkeypatch):
+    """A traducao deve expor indicios de autoria profissional quando existirem."""
+    class FakeValidator:
+        def validate_text(self, text):
+            return {"is_valid": True, "document_type": "receita", "message": "Documento medico"}
+
+    class FakeTranslator:
+        def translate_text(self, text, tipo, categoria):
+            return {
+                "resumo": "Resumo",
+                "detalhado": "Detalhado",
+                "entenda_facil": "Facil",
+                "glossario": {},
+                "alertas": [],
+                "is_saude_mental": False,
+                "from_cache": True,
+            }
+
+    monkeypatch.setattr(translate_route, "DocumentValidator", FakeValidator)
+    monkeypatch.setattr(translate_route, "MedicalTranslator", FakeTranslator)
+
+    response = client.post(
+        "/api/v1/translate/text",
+        json={
+            "text": "Receituario hospitalar. CRM PB 12345. Dr. Joao Silva.",
+            "category": "receita",
+            "document_type": "simples",
+        }
+    )
+
+    assert response.status_code == 200
+    result = response.json()["data"]
+    assert result["from_cache"] is True
+    assert result["professional_authorship_detected"] is True
+    assert len(result["professional_authorship_evidence"]) >= 1

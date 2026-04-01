@@ -48,6 +48,9 @@ export interface TranslationResult {
   glossario: Record<string, string>
   alertas: string[]
   is_saude_mental: boolean
+  from_cache: boolean
+  professional_authorship_detected: boolean
+  professional_authorship_evidence: string[]
 }
 
 export interface TranslateResponse {
@@ -62,6 +65,8 @@ export interface ValidationResult {
   document_type: string | null
   suggested_category: DocumentCategory | null
   message: string
+  professional_authorship_detected: boolean
+  professional_authorship_evidence: string[]
 }
 
 export interface ValidateResponse {

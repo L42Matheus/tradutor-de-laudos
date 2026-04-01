@@ -14,6 +14,18 @@ class TranslationResult(BaseModel):
     glossario: Dict[str, str] = Field(default_factory=dict, description="Termos técnicos explicados")
     alertas: List[str] = Field(default_factory=list, description="Alertas importantes")
     is_saude_mental: bool = Field(False, description="Indica se é documento de saúde mental")
+    from_cache: bool = Field(
+        False,
+        description="Indica se o resultado foi retornado a partir do cache",
+    )
+    professional_authorship_detected: bool = Field(
+        False,
+        description="Indica se ha indicios de autoria profissional no documento",
+    )
+    professional_authorship_evidence: List[str] = Field(
+        default_factory=list,
+        description="Evidencias detectadas de autoria profissional",
+    )
 
 
 class TranslateResponse(BaseModel):
@@ -47,6 +59,14 @@ class ValidationResult(BaseModel):
     document_type: Optional[str] = Field(None, description="Tipo detectado do documento")
     suggested_category: Optional[DocumentCategory] = Field(None, description="Categoria sugerida")
     message: str = Field(..., description="Mensagem explicativa")
+    professional_authorship_detected: bool = Field(
+        False,
+        description="Indica se ha indicios de autoria profissional no documento",
+    )
+    professional_authorship_evidence: List[str] = Field(
+        default_factory=list,
+        description="Evidencias detectadas de autoria profissional",
+    )
 
 
 class ValidateResponse(BaseModel):

@@ -40,11 +40,10 @@ function CopyButton({ text }: { text: string }) {
   )
 }
 
-function TabContent({ content, title }: { content: string; title: string }) {
+function TabContent({ content }: { content: string }) {
   return (
     <div>
-      <div className="flex justify-between items-center mb-3">
-        <h4 className="font-medium text-gray-900 dark:text-white">{title}</h4>
+      <div className="flex justify-end items-center mb-3">
         <CopyButton text={content} />
       </div>
       <div className="prose prose-sm dark:prose-invert max-w-none">
@@ -60,7 +59,7 @@ function GlossaryContent({ glossario }: { glossario: Record<string, string> }) {
   if (entries.length === 0) {
     return (
       <p className="text-gray-500 dark:text-gray-400 italic">
-        Nenhum termo técnico identificado neste documento.
+        Nenhum termo t&eacute;cnico identificado neste documento.
       </p>
     )
   }
@@ -90,19 +89,19 @@ export function ResultTabs({ result, anonymizedFields }: ResultTabsProps) {
       id: 'resumo',
       label: 'Resumo',
       icon: <FileText size={16} />,
-      content: <TabContent content={result.resumo} title="Resumo do documento" />,
+      content: <TabContent content={result.resumo} />,
     },
     {
       id: 'detalhado',
       label: 'Detalhado',
       icon: <List size={16} />,
-      content: <TabContent content={result.detalhado} title="Explicação detalhada" />,
+      content: <TabContent content={result.detalhado} />,
     },
     {
       id: 'entenda_facil',
-      label: 'Entenda Fácil',
+      label: 'Entenda Facil',
       icon: <Lightbulb size={16} />,
-      content: <TabContent content={result.entenda_facil} title="Explicação simplificada" />,
+      content: <TabContent content={result.entenda_facil} />,
     },
     {
       id: 'glossario',
@@ -115,10 +114,9 @@ export function ResultTabs({ result, anonymizedFields }: ResultTabsProps) {
   return (
     <Card>
       <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-3 sm:mb-4">
-        Resultado da Tradução
+        Resultado da Traducao
       </h3>
 
-      {/* Alertas */}
       {result.alertas && result.alertas.length > 0 && (
         <div className="mb-4 space-y-2">
           {result.alertas.map((alerta, index) => (
@@ -129,7 +127,6 @@ export function ResultTabs({ result, anonymizedFields }: ResultTabsProps) {
         </div>
       )}
 
-      {/* Campos anonimizados */}
       {anonymizedFields && anonymizedFields.length > 0 && (
         <Alert variant="info" className="mb-4">
           <strong>Dados removidos para sua privacidade:</strong>{' '}
@@ -137,10 +134,8 @@ export function ResultTabs({ result, anonymizedFields }: ResultTabsProps) {
         </Alert>
       )}
 
-      {/* Tabs com resultado */}
       <Tabs tabs={tabs} />
 
-      {/* Apoio emocional para documentos de saúde mental */}
       {result.is_saude_mental && (
         <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400 mb-4">

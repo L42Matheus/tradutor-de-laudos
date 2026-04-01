@@ -51,6 +51,8 @@ def test_validate_text_returns_expected_structure(client, sample_medical_text, m
     assert "is_valid" in result
     assert "document_type" in result
     assert "message" in result
+    assert "professional_authorship_detected" in result
+    assert "professional_authorship_evidence" in result
 
 
 def test_validate_text_validates_minimum_length(client):
@@ -109,3 +111,22 @@ def test_validate_text_rejects_non_medical_document(
     data = response.json()
     assert data["success"] is True
     assert data["data"]["is_valid"] is False
+
+
+def test_validate_text_returns_authorship_evidence(client, mock_validate_dependencies, monkeypatch):
+    """Retorna autoria profissional de forma estruturada quando ha indicios no texto."""
+    class FakeValidator:
+        def validate_text(self, text):
+            return {"is_valid": True, "document_type": "receita", "message": "Documento medico"}
+
+    monkeypatch.setattr(validate_route, "DocumentValidator", FakeValidator)
+
+    response = client.post(
+        "/api/v1/validate/text",
+        json={"text": "Receituario do Hospital Municipal. CRM PB 12345. Dr. Joao Silva."}
+    )
+
+    assert response.status_code == 200
+    result = response.json()["data"]
+    assert result["professional_authorship_detected"] is True
+    assert len(result["professional_authorship_evidence"]) >= 1

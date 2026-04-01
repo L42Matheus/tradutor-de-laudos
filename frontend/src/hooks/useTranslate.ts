@@ -13,24 +13,6 @@ export function useTranslate(options?: UseTranslateOptions) {
   const { canTranslate, incrementTranslation } = useUsage()
   const [anonymizedFields, setAnonymizedFields] = useState<string[]>([])
 
-  const ensureDocumentIsValid = async (
-    input: { text: string } | { file: File }
-  ) => {
-    const response = 'text' in input
-      ? await validateText(input.text)
-      : await validateFile(input.file)
-
-    if (!response.success || !response.data) {
-      throw new Error(response.error || 'Erro ao validar documento')
-    }
-
-    if (!response.data.is_valid) {
-      throw new Error(`Documento nao aceito: ${response.data.message}`)
-    }
-
-    return response.data
-  }
-
   const translateTextMutation = useMutation({
     mutationFn: async ({
       text,
@@ -45,8 +27,6 @@ export function useTranslate(options?: UseTranslateOptions) {
         throw new Error('Limite de traducoes atingido')
       }
 
-      await ensureDocumentIsValid({ text })
-
       const response = await translateText({
         text,
         category,
@@ -57,7 +37,9 @@ export function useTranslate(options?: UseTranslateOptions) {
         throw new Error(response.error || 'Erro ao traduzir documento')
       }
 
-      await incrementTranslation()
+      if (!response.data.from_cache) {
+        await incrementTranslation()
+      }
       setAnonymizedFields(response.anonymized_fields)
 
       return response.data
@@ -80,15 +62,15 @@ export function useTranslate(options?: UseTranslateOptions) {
         throw new Error('Limite de traducoes atingido')
       }
 
-      await ensureDocumentIsValid({ file })
-
       const response = await translateFile(file, category, documentType)
 
       if (!response.success || !response.data) {
         throw new Error(response.error || 'Erro ao traduzir arquivo')
       }
 
-      await incrementTranslation()
+      if (!response.data.from_cache) {
+        await incrementTranslation()
+      }
       setAnonymizedFields(response.anonymized_fields)
 
       return response.data
@@ -128,7 +110,11 @@ export function useTranslate(options?: UseTranslateOptions) {
     validateFile: validateFileMutation.mutateAsync,
     isTranslating: translateTextMutation.isPending || translateFileMutation.isPending,
     isValidating: validateTextMutation.isPending || validateFileMutation.isPending,
-    error: translateTextMutation.error || translateFileMutation.error,
+    error:
+      validateTextMutation.error ||
+      validateFileMutation.error ||
+      translateTextMutation.error ||
+      translateFileMutation.error,
     anonymizedFields,
     reset: () => {
       translateTextMutation.reset()

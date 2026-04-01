@@ -6,6 +6,7 @@ from fastapi import APIRouter, UploadFile, File
 from app.models.enums import DocumentCategory
 from app.models.requests import ValidateTextRequest
 from app.models.responses import ValidateResponse, ValidationResult
+from app.services.authorship_detector import ProfessionalAuthorshipDetector
 from app.services.validator import DocumentValidator
 from app.services.file_processor import process_uploaded_file
 from app.config import get_settings
@@ -22,6 +23,22 @@ def _map_document_type_to_category(doc_type: str) -> DocumentCategory:
     elif doc_type == 'laudo':
         return DocumentCategory.LAUDO
     return None
+
+
+def _detect_authorship_for_file(detector: ProfessionalAuthorshipDetector, file_data: dict) -> dict:
+    """Detecta indicios de autoria profissional no arquivo processado."""
+    if file_data['type'] == 'text':
+        return detector.detect_from_text(file_data['content'])
+    elif file_data['type'] == 'image':
+        return detector.detect_from_image(
+            image_base64=file_data['content'],
+            media_type=file_data['media_type']
+        )
+
+    return {
+        "professional_authorship_detected": False,
+        "professional_authorship_evidence": [],
+    }
 
 
 @router.post("/text", response_model=ValidateResponse)
@@ -42,7 +59,9 @@ async def validate_text(request: ValidateTextRequest) -> ValidateResponse:
 
     try:
         validator = DocumentValidator()
+        detector = ProfessionalAuthorshipDetector()
         result = validator.validate_text(request.text)
+        authorship = detector.detect_from_text(request.text)
 
         suggested_category = _map_document_type_to_category(result.get('document_type'))
 
@@ -52,7 +71,9 @@ async def validate_text(request: ValidateTextRequest) -> ValidateResponse:
                 is_valid=result.get('is_valid', False),
                 document_type=result.get('document_type'),
                 suggested_category=suggested_category,
-                message=result.get('message', '')
+                message=result.get('message', ''),
+                professional_authorship_detected=authorship['professional_authorship_detected'],
+                professional_authorship_evidence=authorship['professional_authorship_evidence'],
             )
         )
 
@@ -94,6 +115,7 @@ async def validate_file(
             )
 
         validator = DocumentValidator()
+        detector = ProfessionalAuthorshipDetector()
 
         if file_data['type'] == 'text':
             result = validator.validate_text(file_data['content'])
@@ -109,6 +131,7 @@ async def validate_file(
                 error="Tipo de arquivo não suportado"
             )
 
+        authorship = _detect_authorship_for_file(detector, file_data)
         suggested_category = _map_document_type_to_category(result.get('document_type'))
 
         return ValidateResponse(
@@ -117,7 +140,9 @@ async def validate_file(
                 is_valid=result.get('is_valid', False),
                 document_type=result.get('document_type'),
                 suggested_category=suggested_category,
-                message=result.get('message', '')
+                message=result.get('message', ''),
+                professional_authorship_detected=authorship['professional_authorship_detected'],
+                professional_authorship_evidence=authorship['professional_authorship_evidence'],
             )
         )
 
