@@ -1,43 +1,44 @@
 # Traduz Saúde
 
-Sistema para traduzir laudos e receitas médicas em linguagem técnica para linguagem acessível ao paciente.
+Sistema inteligente para traduzir laudos e receitas médicas de linguagem técnica complexa para uma linguagem acessível e compreensível ao paciente.
 
-## O que faz?
+## 🚀 O que faz?
 
-- Traduz laudos medicos para linguagem simples
-- Aceita upload de arquivos (PDF, imagens) ou texto colado
-- Le imagens de laudos usando visao computacional (Claude Vision)
-- Remove automaticamente dados pessoais (LGPD)
-- Explica termos tecnicos
-- Nao armazena nenhum dado
-- Interface web facil de usar
+- **Tradução Inteligente:** Converte termos médicos difíceis em explicações simples usando IA (Claude 3.5 Sonnet).
+- **Múltiplos Níveis:** Gera um resumo simplificado, uma explicação detalhada e um glossário de termos.
+- **Privacidade e LGPD:** Remove automaticamente dados pessoais (PII) antes do processamento.
+- **Suporte a Arquivos:** Aceita texto colado, PDFs e imagens de laudos/receitas.
+- **Visão Computacional:** Lê imagens de documentos médicos diretamente.
+- **Apoio Emocional:** Identifica diagnósticos sensíveis e oferece suporte e orientações.
+- **Área de Especialista:** Permite que profissionais de saúde revisem e validem as traduções.
 
-## IMPORTANTE
+## ⚠️ IMPORTANTE
 
-**Este sistema NAO substitui consulta medica!**
-E apenas uma ferramenta para ajudar pacientes a entenderem melhor seus exames.
+**Este sistema NÃO substitui consulta médica!**
+É apenas uma ferramenta informativa para ajudar pacientes a entenderem melhor seus exames e prepararem perguntas para seus médicos. Nunca altere tratamentos ou tome decisões clínicas baseadas apenas nesta tradução.
 
 ---
 
-## Como Instalar e Rodar
+## 🛠️ Arquitetura
 
-### 1. Pre-requisitos
-- Python 3.8 ou superior
-- Conta na Anthropic (para API do Claude)
+O projeto agora utiliza uma arquitetura moderna separada em Frontend e Backend:
 
-### 2. Pegue sua API Key
-1. Acesse: https://console.anthropic.com/
-2. Faca login ou crie uma conta
-3. Va em "API Keys"
-4. Crie uma nova chave
-5. Copie a chave (comeca com `sk-ant-...`)
+- **Frontend:** React + TypeScript + Vite + Tailwind CSS.
+- **Backend:** FastAPI (Python) + SQLite + Anthropic (Claude API).
 
-### 3. Instalacao
+---
+
+## ⚙️ Como Instalar e Rodar
+
+### 1. Pré-requisitos
+- **Python 3.10** ou superior.
+- **Node.js 18** ou superior (para o frontend).
+- **Chave de API da Anthropic** (Claude).
+
+### 2. Configuração do Backend
 
 ```bash
-git clone https://github.com/L42Matheus/tradutor-de-laudos.git
-cd tradutor-de-laudos
-
+cd backend
 python -m venv venv
 
 # Windows:
@@ -46,65 +47,66 @@ venv\Scripts\activate
 source venv/bin/activate
 
 pip install -r requirements.txt
-```
-
-### 4. Configuracao
-
-```bash
 cp .env.example .env
-# Edite o .env e adicione sua API key
+# Edite o .env e adicione sua ANTHROPIC_API_KEY
 ```
 
-### 5. Rodar
+Para rodar o backend:
+```bash
+python run.py
+# O servidor iniciará em http://localhost:8000
+# Documentação da API disponível em http://localhost:8000/docs
+```
+
+### 3. Configuração do Frontend
 
 ```bash
-streamlit run app.py
+cd frontend
+npm install
+cp .env.example .env.local
+# Verifique se a VITE_API_URL aponta para o seu backend
+```
+
+Para rodar o frontend:
+```bash
+npm run dev
+# Acesse em http://localhost:5173
 ```
 
 ---
 
-## Como Usar
-
-1. Aceite os termos de uso
-2. Selecione o tipo de exame
-3. Escolha como enviar o laudo:
-   - Upload de arquivo (PDF, imagem, TXT)
-   - Colar texto diretamente
-4. Clique em "Traduzir Laudo"
-5. Veja o resultado em 3 niveis:
-   - Resumo simples
-   - Explicacao detalhada
-   - Glossario de termos
-
----
-
-## Estrutura do Projeto
+## 📂 Estrutura do Projeto
 
 ```
-tradutor-laudos/
-├── app.py              # Interface Streamlit
-├── translator.py       # Logica de traducao com Claude
-├── file_reader.py      # Processamento de arquivos
-├── anonymizer.py       # Remove dados pessoais
-├── prompts.py          # Prompts por tipo de exame
-├── requirements.txt    # Dependencias
-├── .env.example        # Template de configuracao
-└── docs/               # Documentacao adicional
-    ├── TECNOLOGIAS.md
-    ├── MELHORIAS.md
-    └── FEATURES.md
+tradutor-de-laudos/
+├── backend/            # API em FastAPI
+│   ├── app/            # Código fonte do backend
+│   │   ├── api/        # Endpoints (auth, translate, history, etc)
+│   │   ├── models/     # Modelos de dados e schemas
+│   │   ├── services/   # Lógica de negócio (translator, anonymizer)
+│   │   └── prompts/    # Prompts especializados para a IA
+│   └── tests/          # Testes automatizados do backend
+├── frontend/           # Interface em React
+│   ├── src/            # Código fonte do frontend
+│   │   ├── components/ # Componentes UI reaproveitáveis
+│   │   ├── pages/      # Páginas (Home, Auth, Especialista)
+│   │   └── services/   # Integração com a API
+│   └── public/         # Assets estáticos
+├── docs/               # Documentação detalhada
+└── app.py              # (Legado) Interface original em Streamlit
 ```
 
 ---
 
-## Documentacao
+## 📖 Documentação Adicional
 
 - [Tecnologias Utilizadas](docs/TECNOLOGIAS.md)
+- [Arquitetura e Produto](docs/ARQUITETURA_PRODUTO_PESQUISA.md)
+- [Roadmap de Features](docs/FEATURES.md)
 - [Melhorias de Layout](docs/MELHORIAS.md)
-- [Novas Features Planejadas](docs/FEATURES.md)
 
 ---
 
-## Licenca
+## ⚖️ Licença
 
 MIT License

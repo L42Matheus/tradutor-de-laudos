@@ -1,152 +1,77 @@
 # Tecnologias Utilizadas
 
-## Python 3.13
-
-**Por que Python?**
-- Linguagem versatil com excelente suporte para processamento de texto
-- Grande ecossistema de bibliotecas para IA e machine learning
-- Integracao nativa com APIs REST
-- Comunidade ativa e documentacao abundante
-- Facil de aprender e manter
+Este documento detalha as escolhas tecnológicas para o projeto **Traduz Saúde**, justificando o uso de cada ferramenta na arquitetura atual de frontend e backend.
 
 ---
 
-## Streamlit
+## 🎨 Frontend
 
-**O que e?**
-Framework Python para criar interfaces web interativas rapidamente.
+O frontend foi reconstruído para oferecer uma experiência de usuário (UX) fluida, responsiva e tipada.
 
-**Por que Streamlit?**
-- Nao requer conhecimento de frontend (HTML/CSS/JavaScript)
-- Prototipagem rapida - menos codigo, mais resultado
-- Deploy simples e gratuito via Streamlit Cloud
-- Componentes prontos para upload de arquivos, formularios, graficos
-- Hot reload - alteracoes aparecem instantaneamente
-- Ideal para MVPs e validacao de ideias
+### **React + TypeScript**
+- **Por que?** Garante segurança de tipos, componentes reutilizáveis e uma vasta biblioteca de ecossistema.
+- **Vite:** Utilizado como build tool para carregamento instantâneo (HMR) e builds otimizados.
 
-**Alternativas consideradas:**
-- Flask/Django: Requerem mais codigo e conhecimento de frontend
-- Gradio: Similar, mas menos flexivel para customizacao
-- React/Vue: Curva de aprendizado maior, mais complexo
+### **Tailwind CSS**
+- **Por que?** Permite estilização rápida e responsiva diretamente no HTML, mantendo o design consistente sem escrever CSS customizado verboso.
 
----
+### **TanStack Query (React Query)**
+- **Por que?** Gerencia o estado das requisições à API, lidando automaticamente com cache, estados de loading e erros.
 
-## Claude API (Anthropic)
+### **Axios**
+- **Por que?** Cliente HTTP robusto para comunicação com o backend FastAPI.
 
-**O que e?**
-API de inteligencia artificial da Anthropic para processamento de linguagem natural.
-
-**Por que Claude?**
-- Excelente compreensao de textos medicos complexos
-- Geracao de explicacoes claras e acessiveis
-- Suporte nativo a visao computacional (le imagens de laudos)
-- Contexto grande (200k tokens) - processa laudos extensos
-- Respostas estruturadas em JSON
-- Menos "alucinacoes" que concorrentes em textos tecnicos
-
-**Modelo utilizado:** Claude Sonnet 4
-- Equilibrio entre qualidade e velocidade
-- Otimo para tarefas que requerem precisao
-
-**Alternativas consideradas:**
-- GPT-4 (OpenAI): Similar em qualidade, mas mais caro
-- Gemini (Google): Bom, mas API menos madura
-- Modelos locais (Llama, Mistral): Requerem GPU, mais complexo
+### **Lucide React**
+- **Por que?** Biblioteca de ícones leve e moderna que se integra perfeitamente com React.
 
 ---
 
-## PyPDF2
+## ⚙️ Backend (API)
 
-**O que e?**
-Biblioteca Python para leitura e manipulacao de arquivos PDF.
+O backend é uma API robusta construída para ser rápida, segura e escalável.
 
-**Por que PyPDF2?**
-- Leve e sem dependencias externas complexas
-- Extrai texto de PDFs nativos (nao escaneados)
-- Facil integracao com o resto do projeto
-- Codigo aberto e bem mantido
+### **FastAPI (Python 3.10+)**
+- **Por que?** Extremamente rápido (comparável a Node.js e Go), com documentação automática (Swagger/OpenAPI) e suporte nativo a operações assíncronas.
 
-**Limitacoes:**
-- Nao faz OCR (PDFs escaneados nao funcionam)
-- Para OCR, seria necessario adicionar Tesseract ou usar Claude Vision
+### **SQLAlchemy + SQLite**
+- **Por que?** O SQLAlchemy é o ORM padrão da indústria para Python, facilitando a manipulação de dados. O SQLite foi escolhido pela simplicidade de configuração inicial (sem necessidade de servidor de DB separado), ideal para MVPs e protótipos locais.
+
+### **Pydantic v2**
+- **Por que?** Utilizado para validação de dados e definição de schemas, garantindo que a entrada e saída da API estejam sempre corretas.
 
 ---
 
-## Pillow
+## 🧠 Inteligência Artificial
 
-**O que e?**
-Biblioteca padrao para processamento de imagens em Python.
-
-**Por que Pillow?**
-- Necessaria para manipular imagens antes de enviar para API
-- Suporta todos os formatos comuns (JPEG, PNG, GIF, WebP)
-- Leve e eficiente
-- Padrao da industria para imagens em Python
+### **Claude 3.5 Sonnet (Anthropic API)**
+- **Por que?** 
+  - **Precisão Médica:** Demonstra excelente capacidade de interpretar termos técnicos complexos sem alucinar.
+  - **Visão Computacional:** Processa imagens de laudos diretamente, identificando textos manuscritos ou impressos com alta fidelidade.
+  - **Contexto Amplo:** Lida bem com documentos longos e gera respostas estruturadas em JSON.
 
 ---
 
-## python-dotenv
+## 📄 Processamento de Arquivos
 
-**O que e?**
-Biblioteca para carregar variaveis de ambiente de arquivos .env.
+### **PyPDF2**
+- **O que faz?** Extrai texto de arquivos PDF digitais (não escaneados).
 
-**Por que python-dotenv?**
-- Mantem API keys fora do codigo fonte
-- Seguranca: .env fica no .gitignore
-- Facilita deploy em diferentes ambientes
-- Padrao da industria para configuracao
+### **Pillow (PIL)**
+- **O que faz?** Manipula e otimiza imagens antes de serem enviadas para a API do Claude para análise visual.
 
 ---
 
-## Arquitetura Geral
+## 🔒 Segurança e Privacidade
 
-```
-Usuario
-   │
-   ▼
-┌─────────────────┐
-│   Streamlit     │  ← Interface web
-│    (app.py)     │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│  file_reader.py │  ← Processa PDF/Imagem/Texto
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│  anonymizer.py  │  ← Remove dados pessoais
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│  translator.py  │  ← Envia para Claude API
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│   Claude API    │  ← Processa e retorna traducao
-└─────────────────┘
-```
+### **Anonymizer (Lógica Customizada)**
+- O sistema utiliza algoritmos de detecção de PII (Personally Identifiable Information) para remover nomes, CPFs, datas de nascimento e contatos antes de enviar qualquer dado para a nuvem da Anthropic, garantindo conformidade com a **LGPD**.
+
+### **python-dotenv**
+- Mantém chaves de API e segredos do banco de dados fora do código-fonte, utilizando variáveis de ambiente seguras.
 
 ---
 
-## Decisoes Tecnicas
+## 🚀 Infraestrutura (Provisionada para)
 
-### Por que nao usar banco de dados?
-- Privacidade: nao armazenamos laudos
-- Simplicidade: menos infraestrutura
-- LGPD: menos responsabilidade legal
-- Performance: menos latencia
-
-### Por que processar tudo em memoria?
-- Seguranca: dados nao persistem
-- Velocidade: sem I/O de disco
-- Escalabilidade: stateless, facil de escalar
-
-### Por que Claude ao inves de modelo local?
-- Qualidade superior para textos medicos
-- Sem necessidade de GPU
-- Atualizacoes automaticas do modelo
-- Suporte a visao sem configuracao adicional
+- **Docker:** O projeto inclui Dockerfiles para frontend e backend, facilitando o deploy em qualquer nuvem.
+- **Railway/Vercel:** Configurações prontas para deploy rápido nessas plataformas.
