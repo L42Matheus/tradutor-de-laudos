@@ -24,7 +24,8 @@ Sistema inteligente para traduzir laudos e receitas médicas de linguagem técni
 O projeto agora utiliza uma arquitetura moderna separada em Frontend e Backend:
 
 - **Frontend:** React + TypeScript + Vite + Tailwind CSS.
-- **Backend:** FastAPI (Python) + SQLite + Anthropic (Claude API).
+- **Backend:** FastAPI (Python) + Postgres + Alembic + pgvector + Anthropic (Claude API).
+- **Storage:** filesystem local na fase 1, com referência em banco para evoluir depois para S3/R2.
 
 ---
 
@@ -49,6 +50,11 @@ source venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
 # Edite o .env e adicione sua ANTHROPIC_API_KEY
+```
+
+Para subir a stack com Postgres local:
+```bash
+docker compose up -d postgres backend
 ```
 
 Para rodar o backend:
@@ -102,6 +108,7 @@ tradutor-de-laudos/
 
 - [Tecnologias Utilizadas](docs/TECNOLOGIAS.md)
 - [Arquitetura e Produto](docs/ARQUITETURA_PRODUTO_PESQUISA.md)
+- [Arquitetura Postgres e RAG](docs/ARQUITETURA_POSTGRES_RAG.md)
 - [Roadmap de Features](docs/FEATURES.md)
 - [Melhorias de Layout](docs/MELHORIAS.md)
 

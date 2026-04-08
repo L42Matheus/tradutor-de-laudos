@@ -1,11 +1,16 @@
 """
-Configuração do banco de dados SQLAlchemy
+ConfiguraÃ§Ã£o do banco de dados SQLAlchemy e migraÃ§Ãµes.
 """
-from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker, declarative_base
 from contextlib import contextmanager
+from pathlib import Path
+
+from alembic import command
+from alembic.config import Config
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import declarative_base, sessionmaker
 
 from app.config import get_settings
+
 
 settings = get_settings()
 
@@ -20,8 +25,17 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 
+def is_sqlite_url(database_url: str | None = None) -> bool:
+    return "sqlite" in (database_url or settings.database_url)
+
+
+def is_postgres_url(database_url: str | None = None) -> bool:
+    target = (database_url or settings.database_url).lower()
+    return target.startswith("postgresql") or target.startswith("postgres")
+
+
 def get_db():
-    """Dependency para injeção de sessão do banco."""
+    """Dependency para injeÃ§Ã£o de sessÃ£o do banco."""
     db = SessionLocal()
     try:
         yield db
@@ -44,10 +58,41 @@ def get_db_context():
 
 
 def init_db():
-    """Inicializa o banco de dados criando todas as tabelas."""
-    from app.models.db_models import Base as DBBase
-    DBBase.metadata.create_all(bind=engine)
+    """
+    Inicializa o banco.
+
+    - Em Postgres: habilita extensÃµes e executa Alembic.
+    - Em SQLite: mantÃ©m create_all + migraÃ§Ãµes leves para compatibilidade local.
+    """
+    import app.models.db_models  # noqa: F401
+    import app.models.platform_models  # noqa: F401
+
+    if is_postgres_url():
+        _ensure_postgres_extensions()
+        if settings.database_auto_migrate:
+            _run_alembic_migrations()
+        else:
+            Base.metadata.create_all(bind=engine)
+        return
+
+    Base.metadata.create_all(bind=engine)
     _run_lightweight_migrations()
+
+
+def _ensure_postgres_extensions() -> None:
+    if not is_postgres_url() or not settings.postgres_enable_pgvector:
+        return
+
+    with engine.begin() as connection:
+        connection.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+
+
+def _run_alembic_migrations() -> None:
+    alembic_ini_path = Path(__file__).resolve().parents[1] / "alembic.ini"
+    alembic_cfg = Config(str(alembic_ini_path))
+    alembic_cfg.set_main_option("script_location", str(Path(__file__).resolve().parents[1] / "alembic"))
+    alembic_cfg.set_main_option("sqlalchemy.url", settings.database_url)
+    command.upgrade(alembic_cfg, "head")
 
 
 def _run_lightweight_migrations():
@@ -68,6 +113,8 @@ def _run_lightweight_migrations():
                 "ALTER TABLE users ADD COLUMN specialist_verification_status "
                 "VARCHAR(20) NOT NULL DEFAULT 'not_applicable'"
             ),
+            "preferred_llm_provider": "ALTER TABLE users ADD COLUMN preferred_llm_provider VARCHAR(20) NOT NULL DEFAULT 'claude'",
+            "preferred_llm_model": "ALTER TABLE users ADD COLUMN preferred_llm_model VARCHAR(50)",
         },
         "traducoes": {
             "user_id": "ALTER TABLE traducoes ADD COLUMN user_id VARCHAR(36)",

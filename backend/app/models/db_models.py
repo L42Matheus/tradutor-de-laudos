@@ -80,6 +80,8 @@ class User(Base):
         default=SpecialistVerificationStatus.NOT_APPLICABLE.value,
         index=True,
     )
+    preferred_llm_provider = Column(String(20), nullable=False, default="claude")
+    preferred_llm_model = Column(String(50), nullable=True)
     is_active = Column(Boolean, nullable=False, default=True)
     created_at = Column(DateTime, default=brazil_now, nullable=False)
     updated_at = Column(DateTime, default=brazil_now, onupdate=brazil_now, nullable=False)

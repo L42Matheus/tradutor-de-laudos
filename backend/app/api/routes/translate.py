@@ -72,20 +72,11 @@ async def translate_text(
 ) -> TranslateResponse:
     """
     Traduz texto de documento medico para linguagem acessivel.
-
-    - **text**: Texto do documento medico
-    - **category**: Categoria (laudo, receita, saude_mental)
-    - **document_type**: Tipo especifico do documento
     """
-    settings = get_settings()
-
-    if not settings.anthropic_api_key:
-        return TranslateResponse(
-            success=False,
-            data=None,
-            error="API key nao configurada",
-            anonymized_fields=[]
-        )
+    # Escolher provider: Request > Preferência do Usuário > Default (Claude)
+    provider = request.provider
+    if not provider and current_user:
+        provider = current_user.preferred_llm_provider
 
     try:
         validator = DocumentValidator()
@@ -99,7 +90,7 @@ async def translate_text(
         authorship = detector.detect_from_text(request.text)
         anonymized_text, anonymized_fields = anonymize_text(request.text)
 
-        translator = MedicalTranslator()
+        translator = MedicalTranslator(provider_name=provider)
         result = translator.translate_text(
             text=anonymized_text,
             tipo=request.document_type,
@@ -109,7 +100,7 @@ async def translate_text(
         register_translation_history(
             db=db,
             user=current_user,
-            source="translate_text",
+            source=f"translate_text_{provider or 'claude'}",
             input_type="text",
             document_category=request.category,
             document_type=request.document_type,
@@ -149,28 +140,32 @@ async def translate_file(
     file: UploadFile = File(..., description="Arquivo do documento (PDF ou imagem)"),
     category: DocumentCategory = Form(..., description="Categoria do documento"),
     document_type: str = Form(..., description="Tipo especifico do documento"),
+    provider: Optional[str] = Form(None, description="Provedor de LLM (claude, openai, gemini)"),
     db: Session = Depends(get_db),
     current_user: Optional[User] = Depends(get_current_user_optional),
 ) -> TranslateResponse:
     """
     Traduz arquivo de documento medico (PDF ou imagem) para linguagem acessivel.
-
-    - **file**: Arquivo PDF ou imagem (png, jpg, jpeg, gif, webp)
-    - **category**: Categoria (laudo, receita, saude_mental)
-    - **document_type**: Tipo especifico do documento
     """
     settings = get_settings()
-
-    if not settings.anthropic_api_key:
-        return TranslateResponse(
-            success=False,
-            data=None,
-            error="API key nao configurada",
-            anonymized_fields=[]
-        )
+    
+    # Escolher provider: Form > Preferência do Usuário > Default (Claude)
+    selected_provider = provider
+    if not selected_provider and current_user:
+        selected_provider = current_user.preferred_llm_provider
 
     try:
+        # Validar tamanho do arquivo antes de processar
         file_bytes = await file.read()
+        file_size_mb = len(file_bytes) / (1024 * 1024)
+        if file_size_mb > settings.max_file_size_mb:
+            return TranslateResponse(
+                success=False,
+                data=None,
+                error=f"Arquivo muito grande ({file_size_mb:.1f}MB). O limite é {settings.max_file_size_mb}MB.",
+                anonymized_fields=[]
+            )
+
         await file.seek(0)
         file_data = await process_uploaded_file(file)
 
@@ -190,7 +185,7 @@ async def translate_file(
                 validation.get("message", "Documento fora do escopo medico")
             )
 
-        translator = MedicalTranslator()
+        translator = MedicalTranslator(provider_name=selected_provider)
         authorship = _detect_authorship_for_file(detector, file_data)
         anonymized_fields = []
 
@@ -219,7 +214,7 @@ async def translate_file(
         register_translation_history(
             db=db,
             user=current_user,
-            source="translate_file",
+            source=f"translate_file_{selected_provider or 'claude'}",
             input_type=file_data["type"],
             document_category=category,
             document_type=document_type,

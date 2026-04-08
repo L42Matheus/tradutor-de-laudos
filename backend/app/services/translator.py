@@ -1,42 +1,28 @@
 """
 Servico de traducao de documentos medicos
 Suporta laudos e receitas, em texto e imagem
-Com cache integrado para economizar chamadas a API
+Com roteamento dinâmico de LLM (Claude, OpenAI, Gemini)
 """
 
 import json
-import anthropic
-
 from app.config import get_settings
 from app.models.enums import DocumentCategory
 from app.prompts import get_prompt_by_type
 from app.services.cache import get_cache, CacheKeyGenerator
+from app.services.llm_providers.router import LLMRouter
 
 
 class MedicalTranslator:
     """Tradutor de documentos medicos (laudos e receitas)"""
 
-    def __init__(self, api_key: str = None, use_cache: bool = None):
+    def __init__(self, provider_name: str = None, use_cache: bool = None):
         settings = get_settings()
-        self.client = anthropic.Anthropic(api_key=api_key or settings.anthropic_api_key)
-        self.model = settings.claude_model
-        self.max_tokens = settings.max_tokens
-        self.temperature = settings.temperature
+        self.provider = LLMRouter.get_provider(provider_name)
         self.use_cache = use_cache if use_cache is not None else settings.cache_enabled
         self._cache = get_cache() if self.use_cache else None
 
     def translate_text(self, text: str, tipo: str, categoria: str = DocumentCategory.LAUDO) -> dict:
-        """
-        Traduz documento medico em texto
-
-        Args:
-            text: Texto do documento (ja anonimizado)
-            tipo: Tipo especifico do documento
-            categoria: 'laudo', 'receita' ou 'saude_mental'
-
-        Returns:
-            dict com resumo, explicacao detalhada, glossario e alertas
-        """
+        """Traduz documento medico em texto com roteamento dinamico"""
         # Verifica cache primeiro
         cache_key = None
         if self.use_cache and self._cache:
@@ -48,15 +34,13 @@ class MedicalTranslator:
 
         system_prompt = get_prompt_by_type(tipo, categoria)
         user_prompt = self._get_user_prompt(categoria)
-        doc_type = "receita medica" if categoria == DocumentCategory.RECEITA else "laudo medico"
 
-        user_message = f"""Analise o seguinte {doc_type} e forneca uma explicacao completa:
-
-{text}
-
-{user_prompt}"""
-
-        result = self._call_api(system_prompt, user_message)
+        result = self.provider.translate_text(
+            text=text,
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            categoria=categoria
+        )
 
         # Salva no cache
         if self.use_cache and self._cache and cache_key:
@@ -67,18 +51,7 @@ class MedicalTranslator:
 
     def translate_image(self, image_base64: str, media_type: str, tipo: str,
                        categoria: str = DocumentCategory.LAUDO) -> dict:
-        """
-        Traduz documento medico a partir de imagem
-
-        Args:
-            image_base64: Imagem em base64
-            media_type: Tipo MIME da imagem
-            tipo: Tipo especifico do documento
-            categoria: 'laudo', 'receita' ou 'saude_mental'
-
-        Returns:
-            dict com resumo, explicacao detalhada, glossario e alertas
-        """
+        """Traduz documento medico a partir de imagem com roteamento dinamico"""
         # Verifica cache primeiro
         cache_key = None
         if self.use_cache and self._cache:
@@ -90,26 +63,14 @@ class MedicalTranslator:
 
         system_prompt = get_prompt_by_type(tipo, categoria)
         user_prompt = self._get_user_prompt(categoria)
-        doc_type = "receita medica" if categoria == DocumentCategory.RECEITA else "laudo medico"
 
-        user_content = [
-            {
-                "type": "image",
-                "source": {
-                    "type": "base64",
-                    "media_type": media_type,
-                    "data": image_base64
-                }
-            },
-            {
-                "type": "text",
-                "text": f"""Analise a imagem do {doc_type} acima e forneca uma explicacao completa.
-
-{user_prompt}"""
-            }
-        ]
-
-        result = self._call_api_with_image(system_prompt, user_content)
+        result = self.provider.translate_image(
+            image_base64=image_base64,
+            media_type=media_type,
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            categoria=categoria
+        )
 
         # Salva no cache
         if self.use_cache and self._cache and cache_key:
@@ -155,88 +116,3 @@ Formato da resposta em JSON:
     "alertas": ["alerta1", "alerta2"] ou [],
     "is_saude_mental": false
 }"""
-
-    def _call_api(self, system_prompt: str, user_message: str) -> dict:
-        """Chama a API do Claude com texto"""
-        try:
-            response = self.client.messages.create(
-                model=self.model,
-                max_tokens=self.max_tokens,
-                temperature=self.temperature,
-                system=system_prompt,
-                messages=[
-                    {"role": "user", "content": user_message}
-                ]
-            )
-
-            response_text = response.content[0].text
-            return self._parse_response(response_text)
-
-        except Exception as e:
-            raise Exception(f"Erro ao processar com a API: {str(e)}")
-
-    def _call_api_with_image(self, system_prompt: str, user_content: list) -> dict:
-        """Chama a API do Claude com imagem"""
-        try:
-            response = self.client.messages.create(
-                model=self.model,
-                max_tokens=self.max_tokens,
-                temperature=self.temperature,
-                system=system_prompt,
-                messages=[
-                    {"role": "user", "content": user_content}
-                ]
-            )
-
-            response_text = response.content[0].text
-            return self._parse_response(response_text)
-
-        except Exception as e:
-            raise Exception(f"Erro ao processar imagem com a API: {str(e)}")
-
-    def _parse_response(self, response_text: str) -> dict:
-        """Faz parse da resposta JSON do Claude"""
-        try:
-            if "```json" in response_text:
-                start = response_text.find("```json") + 7
-                end = response_text.rfind("```")
-                json_text = response_text[start:end].strip()
-            elif "```" in response_text:
-                start = response_text.find("```") + 3
-                end = response_text.rfind("```")
-                json_text = response_text[start:end].strip()
-            else:
-                json_text = response_text
-
-            resultado = json.loads(json_text)
-
-            # Normalizar glossario para dict
-            glossario = resultado.get('glossario', {})
-            if isinstance(glossario, str):
-                glossario = {}
-
-            # Normalizar alertas para lista
-            alertas = resultado.get('alertas', [])
-            if alertas is None:
-                alertas = []
-            elif isinstance(alertas, str):
-                alertas = [alertas] if alertas else []
-
-            return {
-                'resumo': resultado.get('resumo', 'Nao foi possivel gerar resumo'),
-                'detalhado': resultado.get('detalhado', 'Nao foi possivel gerar explicacao detalhada'),
-                'entenda_facil': resultado.get('entenda_facil', 'Nao foi possivel gerar explicacao simples'),
-                'glossario': glossario,
-                'alertas': alertas,
-                'is_saude_mental': resultado.get('is_saude_mental', False)
-            }
-
-        except json.JSONDecodeError:
-            return {
-                'resumo': response_text[:500] + "...",
-                'detalhado': response_text,
-                'entenda_facil': 'Nao foi possivel gerar explicacao simples',
-                'glossario': {},
-                'alertas': [],
-                'is_saude_mental': False
-            }

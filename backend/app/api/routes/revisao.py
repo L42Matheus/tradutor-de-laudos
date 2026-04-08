@@ -13,6 +13,7 @@ from app.database import get_db
 from app.models.db_models import (
     User, Traducao, RevisaoEspecialista, StatusRevisao
 )
+from app.models.platform_models import Translation as PlatformTranslation, TranslationReview
 from app.services.auth_service import get_current_user
 
 
@@ -97,6 +98,15 @@ def verificar_especialista(user: User) -> None:
         )
 
 
+def buscar_traducao_plataforma(db: Session, traducao_id: str) -> Optional[PlatformTranslation]:
+    return (
+        db.query(PlatformTranslation)
+        .filter(PlatformTranslation.legacy_source_table == "traducoes")
+        .filter(PlatformTranslation.legacy_source_id == traducao_id)
+        .first()
+    )
+
+
 # === Endpoints ===
 
 @router.post("/solicitar", response_model=SolicitarRevisaoResponse)
@@ -128,6 +138,10 @@ async def solicitar_revisao(
 
     traducao.solicitar_revisao = True
     traducao.status_revisao = StatusRevisao.PENDENTE.value
+    traducao_plataforma = buscar_traducao_plataforma(db, traducao.id)
+    if traducao_plataforma:
+        traducao_plataforma.specialist_review_requested = True
+        traducao_plataforma.specialist_review_status = StatusRevisao.PENDENTE.value
     db.commit()
 
     return SolicitarRevisaoResponse(
@@ -198,6 +212,9 @@ async def obter_traducao_para_revisao(
 
     if traducao.status_revisao == StatusRevisao.PENDENTE.value:
         traducao.status_revisao = StatusRevisao.EM_REVISAO.value
+        traducao_plataforma = buscar_traducao_plataforma(db, traducao.id)
+        if traducao_plataforma:
+            traducao_plataforma.specialist_review_status = StatusRevisao.EM_REVISAO.value
         db.commit()
 
     return TraducaoDetalhe(
@@ -248,8 +265,25 @@ async def enviar_parecer(
     )
 
     traducao.status_revisao = StatusRevisao.CONCLUIDA.value
+    traducao_plataforma = buscar_traducao_plataforma(db, traducao.id)
+    if traducao_plataforma:
+        traducao_plataforma.specialist_review_requested = True
+        traducao_plataforma.specialist_review_status = StatusRevisao.CONCLUIDA.value
 
     db.add(revisao)
+    if traducao_plataforma and not traducao_plataforma.review:
+        db.add(
+            TranslationReview(
+                translation_id=traducao_plataforma.id,
+                specialist_id=current_user.id,
+                fidelity_score=request.nota_fidelidade,
+                clarity_score=request.nota_clareza,
+                risk_score=request.nota_risco,
+                overall_score=round(nota_geral, 2),
+                technical_comment=request.comentario_tecnico,
+                correction_suggestion=request.sugestao_correcao,
+            )
+        )
     db.commit()
 
     return ParecerResponse(

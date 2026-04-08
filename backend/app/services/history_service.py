@@ -11,6 +11,9 @@ from app.models.db_models import TranslationHistory, User
 from app.utils.datetime_utils import brazil_now
 
 
+from app.services.storage_service import secure_storage
+
+
 def _safe_excerpt(text: Optional[str], limit: int = 500) -> Optional[str]:
     if not text:
         return None
@@ -24,6 +27,7 @@ def _generate_document_hash(
     original_image_base64: Optional[str],
 ) -> Optional[str]:
     if input_type == "image" and original_image_base64:
+        # Se for imagem, o hash deve vir do conteúdo original (antes da remoção do prefixo)
         return hashlib.sha256(original_image_base64.encode("utf-8")).hexdigest()
 
     if original_text and original_text.strip():
@@ -62,6 +66,13 @@ def register_translation_history(
     document_hash = _generate_document_hash(input_type, normalized_text, original_image_base64)
     now = brazil_now()
 
+    # Processar armazenamento seguro da imagem se houver
+    storage_ref = None
+    if input_type == "image" and original_image_base64:
+        filename = secure_storage.save_image(original_image_base64, file_hash or document_hash)
+        if filename:
+            storage_ref = f"encrypted://{filename}"
+
     existing_history = None
     if file_hash:
         existing_history = (
@@ -85,9 +96,8 @@ def register_translation_history(
         existing_history.document_category = document_category
         existing_history.document_type = document_type
         existing_history.original_text = existing_history.original_text or normalized_text
-        existing_history.original_image_base64 = (
-            existing_history.original_image_base64 or original_image_base64
-        )
+        # Protecao LGPD: Nao armazenamos Base64, apenas referencia ao storage criptografado
+        existing_history.original_image_base64 = storage_ref or existing_history.original_image_base64
         existing_history.original_image_media_type = (
             existing_history.original_image_media_type or original_image_media_type
         )
@@ -107,7 +117,7 @@ def register_translation_history(
         document_category=document_category,
         document_type=document_type,
         original_text=normalized_text,
-        original_image_base64=original_image_base64,
+        original_image_base64=storage_ref,  # Referencia criptografada
         original_image_media_type=original_image_media_type,
         original_excerpt=_safe_excerpt(normalized_text),
         translated_summary=translated_summary,

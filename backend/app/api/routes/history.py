@@ -4,14 +4,15 @@ Rotas de historico de traducoes do usuario.
 import json
 from typing import Optional
 
-from fastapi import APIRouter, Depends, File, Query, UploadFile
+from fastapi import APIRouter, Depends, File, Query, UploadFile, Response
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.db_models import TranslationHistory, User
-from app.services.auth_service import get_current_user_optional
+from app.services.auth_service import get_current_user, get_current_user_optional
 from app.services.history_service import generate_file_hash
+from app.services.storage_service import secure_storage
 from app.utils.datetime_utils import serialize_brazil_datetime
 
 
@@ -31,6 +32,39 @@ class FileDuplicateEnvelope(BaseModel):
     translated_summary: Optional[str] = None
     created_at: Optional[str] = None
     error: Optional[str] = None
+
+
+@router.get("/image/{record_id}")
+async def get_history_image(
+    record_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Recupera a imagem original criptografada do historico."""
+    record = (
+        db.query(TranslationHistory)
+        .filter(TranslationHistory.id == record_id)
+        .filter(TranslationHistory.user_id == current_user.id)
+        .first()
+    )
+
+    if not record or not record.original_image_base64:
+        return Response(status_code=404, content="Imagem nao encontrada")
+
+    if not record.original_image_base64.startswith("encrypted://"):
+        # Legado ou formato invalido
+        return Response(status_code=400, content="Formato de imagem nao suportado para recuperacao segura")
+
+    filename = record.original_image_base64.replace("encrypted://", "")
+    image_bytes = secure_storage.get_image(filename)
+
+    if not image_bytes:
+        return Response(status_code=404, content="Arquivo de imagem nao encontrado no storage")
+
+    return Response(
+        content=image_bytes,
+        media_type=record.original_image_media_type or "image/jpeg"
+    )
 
 
 @router.get("/mine", response_model=HistoryEnvelope)
