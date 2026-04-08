@@ -39,6 +39,7 @@ export function Button({
 
   return (
     <button
+      type={props.type ?? 'button'}
       className={clsx(
         baseStyles,
         variants[variant],

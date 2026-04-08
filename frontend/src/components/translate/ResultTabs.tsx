@@ -9,6 +9,7 @@ import { EmotionalSupportInline } from '../support/EmotionalSupportInline'
 interface ResultTabsProps {
   result: TranslationResult
   anonymizedFields?: string[]
+  embedded?: boolean
 }
 
 function CopyButton({ text }: { text: string }) {
@@ -83,7 +84,7 @@ function GlossaryContent({ glossario }: { glossario: Record<string, string> }) {
   )
 }
 
-export function ResultTabs({ result, anonymizedFields }: ResultTabsProps) {
+export function ResultTabs({ result, anonymizedFields, embedded = false }: ResultTabsProps) {
   const tabs = [
     {
       id: 'resumo',
@@ -111,8 +112,8 @@ export function ResultTabs({ result, anonymizedFields }: ResultTabsProps) {
     },
   ]
 
-  return (
-    <Card>
+  const content = (
+    <>
       <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-3 sm:mb-4">
         Resultado da Traducao
       </h3>
@@ -145,6 +146,12 @@ export function ResultTabs({ result, anonymizedFields }: ResultTabsProps) {
           <EmotionalSupportInline />
         </div>
       )}
-    </Card>
+    </>
   )
+
+  if (embedded) {
+    return content
+  }
+
+  return <Card>{content}</Card>
 }

@@ -51,11 +51,16 @@ body {
   animation: spin 1s linear infinite;
 }
 
-/* Gradient header */
+/* Gradient header - azul padrão do Traduz Saúde */
 .gradient-header {
-  @apply bg-gradient-to-r from-primary-600 to-primary-800;
+  @apply bg-gradient-to-r from-blue-600 to-blue-800;
 }
 
 .dark .gradient-header {
-  @apply bg-gradient-to-r from-purple-900 to-indigo-900;
+  @apply bg-gradient-to-r from-blue-800 to-blue-950;
+}
+
+/* Transição global para mudança de tema */
+* {
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
