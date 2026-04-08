@@ -4,7 +4,7 @@ Rotas de autenticacao, cadastro e consentimento.
 import re
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Header
+from fastapi import APIRouter, Cookie, Depends, Header, Request, Response
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
 
@@ -25,6 +25,9 @@ from app.services.auth_service import (
     revoke_session,
     verify_password,
 )
+from app.config import get_settings
+
+settings = get_settings()
 
 
 router = APIRouter()
@@ -51,12 +54,10 @@ class RegisterRequest(BaseModel):
 
     @field_validator(
         "institution",
-        "city",
         "specialty",
         "professional_registry_type",
         "professional_registry_number",
         "professional_registry_state",
-        "state",
         mode="before",
     )
     @classmethod
@@ -66,6 +67,26 @@ class RegisterRequest(BaseModel):
         if isinstance(value, str):
             normalized = value.strip()
             return normalized or None
+        return value
+
+    @field_validator("city", "state", mode="before")
+    @classmethod
+    def normalize_required_strings(cls, value: str) -> str:
+        if isinstance(value, str):
+            return value.strip()
+        return value
+
+    @field_validator("password")
+    @classmethod
+    def validate_password_complexity(cls, value: str) -> str:
+        if not re.search(r"[A-Z]", value):
+            raise ValueError("Senha deve conter pelo menos uma letra maiuscula")
+        if not re.search(r"[a-z]", value):
+            raise ValueError("Senha deve conter pelo menos uma letra minuscula")
+        if not re.search(r"\d", value):
+            raise ValueError("Senha deve conter pelo menos um numero")
+        if not re.search(r"[!@#$%^&*(),.?\":{}|<>_\-+=\[\]\\;'/`~]", value):
+            raise ValueError("Senha deve conter pelo menos um caractere especial")
         return value
 
 
@@ -98,8 +119,50 @@ def _normalizar_registro_numero(value: Optional[str]) -> Optional[str]:
     return cleaned or None
 
 
+def _should_use_secure_cookie(request: Request) -> bool:
+    """Determina se deve usar cookie seguro baseado no ambiente."""
+    try:
+        host = (request.headers.get("host") or "").lower()
+        forwarded_proto = (request.headers.get("x-forwarded-proto") or "").lower()
+
+        # Tenta obter o scheme da URL
+        scheme = ""
+        if forwarded_proto:
+            scheme = forwarded_proto
+        elif request.url and hasattr(request.url, 'scheme'):
+            scheme = (request.url.scheme or "").lower()
+
+        # Localhost sempre sem secure
+        if host.startswith("localhost") or host.startswith("127.0.0.1"):
+            return False
+
+        # HTTPS em produção usa secure
+        return scheme == "https" and not settings.debug
+    except Exception:
+        # Em caso de erro, retorna False (mais permissivo)
+        return False
+
+
+def _set_auth_cookie(response: Response, request: Request, token: str):
+    """Configura o cookie HttpOnly de autenticacao."""
+    response.set_cookie(
+        key="auth_token",
+        value=token,
+        httponly=True,
+        max_age=30 * 24 * 60 * 60,  # 30 dias
+        expires=30 * 24 * 60 * 60,
+        samesite="lax",
+        secure=_should_use_secure_cookie(request),
+    )
+
+
 @router.post("/register", response_model=AuthEnvelope)
-async def register(request: RegisterRequest, db: Session = Depends(get_db)) -> AuthEnvelope:
+async def register(
+    request: RegisterRequest, 
+    response: Response,
+    http_request: Request,
+    db: Session = Depends(get_db)
+) -> AuthEnvelope:
     if not request.terms_accepted or not request.privacy_accepted:
         return AuthEnvelope(success=False, error="Termos e privacidade precisam ser aceitos")
 
@@ -118,7 +181,8 @@ async def register(request: RegisterRequest, db: Session = Depends(get_db)) -> A
         if not request.specialty or len(request.specialty.strip()) < 3:
             return AuthEnvelope(success=False, error="Especialidade obrigatoria para especialista")
 
-        if request.professional_registry_type not in {"CRM"}:
+        valid_registry_types = {"CRM", "COREN", "CRO", "CRP", "CRF", "CREFITO", "CRN", "CRBM"}
+        if request.professional_registry_type not in valid_registry_types:
             return AuthEnvelope(success=False, error="Registro profissional invalido")
 
         professional_registry_number = _normalizar_registro_numero(
@@ -182,11 +246,17 @@ async def register(request: RegisterRequest, db: Session = Depends(get_db)) -> A
     db.commit()
     db.refresh(user)
 
+    _set_auth_cookie(response, http_request, token)
     return AuthEnvelope(success=True, data=_build_auth_response(user, token))
 
 
 @router.post("/login", response_model=AuthEnvelope)
-async def login(request: LoginRequest, db: Session = Depends(get_db)) -> AuthEnvelope:
+async def login(
+    request: LoginRequest, 
+    response: Response,
+    http_request: Request,
+    db: Session = Depends(get_db)
+) -> AuthEnvelope:
     if not _is_valid_email(request.email):
         return AuthEnvelope(success=False, error="Email invalido")
 
@@ -201,6 +271,7 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)) -> AuthEnv
     db.commit()
     db.refresh(user)
 
+    _set_auth_cookie(response, http_request, token)
     return AuthEnvelope(success=True, data=_build_auth_response(user, token))
 
 
@@ -214,11 +285,24 @@ async def me(current_user: Optional[User] = Depends(get_current_user_optional)) 
 
 @router.post("/logout", response_model=AuthEnvelope)
 async def logout(
+    response: Response,
     authorization: Optional[str] = Header(None, alias="Authorization"),
+    auth_token: Optional[str] = Cookie(None),
     db: Session = Depends(get_db),
 ) -> AuthEnvelope:
-    if authorization and authorization.lower().startswith("bearer "):
-        revoke_session(db, authorization.split(" ", 1)[1].strip())
+    # Prioridade: Cookie (Web) > Header Bearer (Mobile/Legacy)
+    token_to_revoke = None
+
+    if auth_token:
+        token_to_revoke = auth_token
+    elif authorization and authorization.lower().startswith("bearer "):
+        token_to_revoke = authorization.split(" ", 1)[1].strip()
+
+    if token_to_revoke:
+        revoke_session(db, token_to_revoke)
         db.commit()
+
+    # Limpar Cookie
+    response.delete_cookie(key="auth_token", samesite="lax", httponly=True)
 
     return AuthEnvelope(success=True, data={"logged_out": True})

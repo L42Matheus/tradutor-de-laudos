@@ -15,7 +15,11 @@ from sqlalchemy import or_
 from app.config import get_settings
 from app.database import get_db, get_db_context
 from app.models.db_models import EpidemiologiaMetadado, Traducao, User
+from app.models.platform_models import Translation as PlatformTranslation
+from app.services.analytics_service import upsert_epidemiology_event
 from app.services.auth_service import get_current_user_optional
+from app.services.clinical_alerts_service import merge_alert_texts
+from app.services.document_service import upsert_translation_record
 from app.services.geocodificacao_service import geocodificar, geocodificar_municipio
 from app.services.history_service import generate_file_hash, register_translation_history
 from app.services.lgpd_service import sanitizar_metadados
@@ -87,6 +91,8 @@ async def _persistir_metadados_automaticos(traducao_id: str, resultado_traducao:
             mes_ano=metadado_sanitizado["mes_ano"],
         )
         db.add(metadado)
+        db.flush()
+        _sincronizar_evento_epidemiologico(db, traducao, "inferred")
 
 
 def _gerar_documento_hash(texto_extraido: str) -> str:
@@ -128,6 +134,34 @@ def _carregar_resultado_traducao(traducao: Traducao) -> dict:
         "faixa_etaria": traducao.metadado.faixa_etaria if traducao.metadado else None,
         "from_cache": True,
     }
+
+
+def _sincronizar_evento_epidemiologico(db: Session, traducao: Traducao, location_source: str) -> None:
+    if not traducao.metadado:
+        return
+
+    platform_translation = (
+        db.query(PlatformTranslation)
+        .filter(PlatformTranslation.legacy_source_table == "traducoes")
+        .filter(PlatformTranslation.legacy_source_id == traducao.id)
+        .first()
+    )
+    if not platform_translation:
+        return
+
+    upsert_epidemiology_event(
+        db=db,
+        translation=platform_translation,
+        municipality=traducao.metadado.municipio,
+        state=traducao.metadado.estado,
+        latitude=traducao.metadado.lat,
+        longitude=traducao.metadado.lon,
+        condition_category=traducao.metadado.condicao_categoria,
+        age_band=traducao.metadado.faixa_etaria,
+        event_month=traducao.metadado.mes_ano,
+        location_source=location_source,
+        source_confidence=1.0 if location_source == "confirmed" else 0.8,
+    )
 
 
 def _buscar_traducao_existente(
@@ -206,11 +240,13 @@ async def processar_documento(
         original_image_base64 = None
         original_image_media_type = None
         file_hash = None
+        original_file_bytes = None
         mime_type = detectar_tipo_mime(arquivo) if arquivo else None
         history_input_type = "text"
         if arquivo and mime_type and mime_type.startswith("image/"):
             image_bytes = await arquivo.read()
             await arquivo.seek(0)
+            original_file_bytes = image_bytes
             original_image_base64 = base64.standard_b64encode(image_bytes).decode("utf-8")
             original_image_media_type = mime_type
             file_hash = generate_file_hash(image_bytes)
@@ -218,6 +254,7 @@ async def processar_documento(
         elif arquivo:
             file_bytes = await arquivo.read()
             await arquivo.seek(0)
+            original_file_bytes = file_bytes
             file_hash = generate_file_hash(file_bytes)
             history_input_type = "text"
 
@@ -245,7 +282,9 @@ async def processar_documento(
             resultado_traducao = _carregar_resultado_traducao(traducao)
             glossario = _carregar_glossario(traducao, resultado_traducao.get("glossario", {}))
             resultado_traducao["glossario"] = glossario
+            resultado_traducao["alertas"] = merge_alert_texts(texto_extraido, resultado_traducao)
             resultado_traducao["from_cache"] = True
+            traducao.resultado_json = json.dumps(resultado_traducao, ensure_ascii=True)
 
             if municipio_confirmado and estado_confirmado and not traducao.metadado:
                 geo = await geocodificar_municipio(municipio_confirmado, estado_confirmado)
@@ -261,6 +300,7 @@ async def processar_documento(
                         mes_ano=date.today().replace(day=1),
                     )
                     db.add(metadado)
+                    db.flush()
                 else:
                     requer_confirmacao = True
             else:
@@ -268,6 +308,7 @@ async def processar_documento(
         else:
             documento_hash = _gerar_documento_hash(texto_extraido)
             resultado_traducao = await processar_laudo(texto_extraido)
+            resultado_traducao["alertas"] = merge_alert_texts(texto_extraido, resultado_traducao)
             glossario = resultado_traducao.get("glossario", {})
             traducao = Traducao(
                 session_id=x_session_id,
@@ -301,6 +342,7 @@ async def processar_documento(
                         mes_ano=metadado_sanitizado["mes_ano"],
                     )
                     db.add(metadado)
+                    db.flush()
                 else:
                     requer_confirmacao = True
             elif traducao.metadado:
@@ -315,6 +357,29 @@ async def processar_documento(
                 )
 
         glossario = _carregar_glossario(traducao, resultado_traducao.get("glossario", {}))
+
+        platform_translation = upsert_translation_record(
+            db=db,
+            user_id=current_user.id if current_user else None,
+            session_id=x_session_id,
+            source_route="epidemio_processar",
+            input_type=history_input_type,
+            document_category=resultado_traducao.get("condicao_categoria"),
+            document_type="epidemiologico",
+            original_text=texto_extraido,
+            result_payload=resultado_traducao,
+            file_bytes=original_file_bytes,
+            file_name=arquivo.filename if arquivo else None,
+            media_type=mime_type,
+            file_hash=file_hash,
+            document_hash=traducao.documento_hash,
+            prompt_version="epidemio_v1",
+            requires_location_confirmation=requer_confirmacao,
+            specialist_review_requested=traducao.solicitar_revisao,
+            specialist_review_status=traducao.status_revisao,
+            legacy_source_table="traducoes",
+            legacy_source_id=traducao.id,
+        )
 
         result_payload = {
             **resultado_traducao,
@@ -334,6 +399,13 @@ async def processar_documento(
             result_payload=result_payload,
             file_hash=file_hash,
         )
+
+        if traducao.metadado:
+            _sincronizar_evento_epidemiologico(
+                db,
+                traducao,
+                "confirmed" if municipio_confirmado and estado_confirmado else "inferred",
+            )
 
         db.commit()
         db.refresh(traducao)
@@ -400,6 +472,8 @@ async def confirmar_localizacao(
             mes_ano=date.today().replace(day=1),
         )
         db.add(metadado)
+        db.flush()
+        _sincronizar_evento_epidemiologico(db, traducao, "confirmed")
         db.commit()
         db.refresh(traducao)
 

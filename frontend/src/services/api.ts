@@ -14,6 +14,7 @@ import type {
   SupportResource,
   SupportResponse,
   EpidemiologyProcessingResult,
+  LLMProvider,
 } from '../types/api'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL
@@ -23,6 +24,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL
 // Criar instância do axios
 const api = axios.create({
   baseURL: API_BASE_URL,
+  withCredentials: true, // Importante para enviar cookies HttpOnly
   headers: {
     'Content-Type': 'application/json',
   },
@@ -63,10 +65,10 @@ api.interceptors.request.use((config) => {
   if (sessionId) {
     config.headers['X-Session-ID'] = sessionId
   }
-  const authToken = localStorage.getItem('auth_token')
-  if (authToken) {
-    config.headers.Authorization = `Bearer ${authToken}`
-  }
+  
+  // Nao precisamos mais injetar o Bearer Token manualmente
+  // O navegador enviara o cookie auth_token automaticamente via withCredentials
+  
   return config
 })
 
@@ -113,6 +115,13 @@ export const getMyTranslationHistory = async (limit = 20): Promise<TranslationHi
   return response.data
 }
 
+export const getHistoryImage = async (recordId: string): Promise<Blob> => {
+  const response = await api.get(`/history/image/${recordId}`, {
+    responseType: 'blob',
+  })
+  return response.data
+}
+
 export const checkFileDuplicate = async (file: File): Promise<FileDuplicateCheckResponse> => {
   const formData = new FormData()
   formData.append('file', file)
@@ -136,12 +145,16 @@ export const translateText = async (
 export const translateFile = async (
   file: File,
   category: string,
-  documentType: string
+  documentType: string,
+  provider?: LLMProvider
 ): Promise<TranslateResponse> => {
   const formData = new FormData()
   formData.append('file', file)
   formData.append('category', category)
   formData.append('document_type', documentType)
+  if (provider) {
+    formData.append('provider', provider)
+  }
 
   const response = await api.post('/translate/file', formData, {
     headers: {
@@ -237,7 +250,8 @@ export const processarDocumento = async (
   arquivo?: File,
   texto?: string,
   municipioConfirmado?: string,
-  estadoConfirmado?: string
+  estadoConfirmado?: string,
+  provider?: LLMProvider
 ): Promise<EpidemiologyProcessingResult> => {
   const formData = new FormData()
 
@@ -252,6 +266,9 @@ export const processarDocumento = async (
   }
   if (estadoConfirmado) {
     formData.append('estado_confirmado', estadoConfirmado)
+  }
+  if (provider) {
+    formData.append('provider', provider)
   }
 
   const response = await api.post('/epidemio/processar', formData, {

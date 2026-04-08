@@ -10,6 +10,7 @@ import { FileUploader } from '../components/translate/FileUploader'
 import { TextInput } from '../components/translate/TextInput'
 import { ConfirmacaoLocalizacao } from '../components/translate/ConfirmacaoLocalizacao'
 import { ResultTabs } from '../components/translate/ResultTabs'
+import { ProviderSelector } from '../components/translate/ProviderSelector'
 import { useUsage } from '../context/UsageContext'
 import { useAuth } from '../context/AuthContext'
 import {
@@ -25,6 +26,7 @@ import type {
   EpidemiologyProcessingResult,
   TranslationResult,
   ValidationResult,
+  LLMProvider,
 } from '../types/api'
 import { CATEGORY_LABELS } from '../types/api'
 import { formatBrazilDateTime } from '../utils/datetime'
@@ -51,11 +53,14 @@ interface HomePageProps {
 
 export function HomePage({ embedded = false, onOpenHistoryDocument }: HomePageProps) {
   const queryClient = useQueryClient()
+  const { user } = useAuth()
+  
   const [category, setCategory] = useState<DocumentCategory | null>(null)
   const [documentType, setDocumentType] = useState<string | null>(null)
   const [inputMethod, setInputMethod] = useState<InputMethod>('text')
   const [text, setText] = useState('')
   const [file, setFile] = useState<File | null>(null)
+  const [llmProvider, setLlmProvider] = useState<LLMProvider>('claude')
   const [result, setResult] = useState<TranslationResult | null>(null)
   const [submissionStage, setSubmissionStage] = useState<SubmissionStage>('idle')
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null)
@@ -71,7 +76,6 @@ export function HomePage({ embedded = false, onOpenHistoryDocument }: HomePagePr
   } | null>(null)
 
   const { canTranslate, usage, incrementTranslation } = useUsage()
-  const { user } = useAuth()
 
   const canSubmit =
     category &&
@@ -221,7 +225,7 @@ export function HomePage({ embedded = false, onOpenHistoryDocument }: HomePagePr
 
         setValidationResult(validation)
         setSubmissionStage('translating')
-        const processingResult = await processarDocumento(undefined, text)
+        const processingResult = await processarDocumento(undefined, text, undefined, undefined, llmProvider)
         if (!processingResult.success) {
           throw new Error(processingResult.error || 'Erro ao processar documento')
         }
@@ -267,7 +271,7 @@ export function HomePage({ embedded = false, onOpenHistoryDocument }: HomePagePr
 
         setValidationResult(validation)
         setSubmissionStage('translating')
-        const processingResult = await processarDocumento(file)
+        const processingResult = await processarDocumento(file, undefined, undefined, undefined, llmProvider)
         if (!processingResult.success) {
           throw new Error(processingResult.error || 'Erro ao processar arquivo')
         }
@@ -393,43 +397,53 @@ export function HomePage({ embedded = false, onOpenHistoryDocument }: HomePagePr
       )}
 
       {documentType && (
-        <Card>
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Como deseja enviar o documento?
-            </label>
-            <div className="flex gap-2 sm:gap-3">
-              <button
-                onClick={() => setInputMethod('text')}
-                className={`flex-1 flex items-center justify-center gap-1.5 sm:gap-2 p-2 sm:p-3 rounded-lg border-2 transition-colors text-sm sm:text-base ${
-                  inputMethod === 'text'
-                    ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
-                    : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400'
-                }`}
-              >
-                <Type size={18} />
-                <span>Colar texto</span>
-              </button>
-              <button
-                onClick={() => setInputMethod('file')}
-                className={`flex-1 flex items-center justify-center gap-1.5 sm:gap-2 p-2 sm:p-3 rounded-lg border-2 transition-colors text-sm sm:text-base ${
-                  inputMethod === 'file'
-                    ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
-                    : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400'
-                }`}
-              >
-                <FileText size={18} />
-                <span>Arquivo</span>
-              </button>
-            </div>
-          </div>
+        <>
+          <Card>
+            <ProviderSelector 
+              value={llmProvider} 
+              onChange={setLlmProvider} 
+              disabled={submissionStage !== 'idle'}
+            />
+          </Card>
 
-          {inputMethod === 'text' ? (
-            <TextInput value={text} onChange={setText} />
-          ) : (
-            <FileUploader selectedFile={file} onFileSelect={setFile} />
-          )}
-        </Card>
+          <Card>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Como deseja enviar o documento?
+              </label>
+              <div className="flex gap-2 sm:gap-3">
+                <button
+                  onClick={() => setInputMethod('text')}
+                  className={`flex-1 flex items-center justify-center gap-1.5 sm:gap-2 p-2 sm:p-3 rounded-lg border-2 transition-colors text-sm sm:text-base ${
+                    inputMethod === 'text'
+                      ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
+                      : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400'
+                  }`}
+                >
+                  <Type size={18} />
+                  <span>Colar texto</span>
+                </button>
+                <button
+                  onClick={() => setInputMethod('file')}
+                  className={`flex-1 flex items-center justify-center gap-1.5 sm:gap-2 p-2 sm:p-3 rounded-lg border-2 transition-colors text-sm sm:text-base ${
+                    inputMethod === 'file'
+                      ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
+                      : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400'
+                  }`}
+                >
+                  <FileText size={18} />
+                  <span>Arquivo</span>
+                </button>
+              </div>
+            </div>
+
+            {inputMethod === 'text' ? (
+              <TextInput value={text} onChange={setText} />
+            ) : (
+              <FileUploader selectedFile={file} onFileSelect={setFile} />
+            )}
+          </Card>
+        </>
       )}
 
       {submissionError && (

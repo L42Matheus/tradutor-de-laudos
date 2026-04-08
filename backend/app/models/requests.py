@@ -11,13 +11,16 @@ class TranslateTextRequest(BaseModel):
     text: str = Field(..., min_length=10, max_length=10000, description="Texto do documento médico")
     category: DocumentCategory = Field(..., description="Categoria do documento")
     document_type: str = Field(..., description="Tipo específico do documento")
+    provider: Optional[str] = Field("claude", description="Provedor de LLM (claude, openai, gemini)")
+    model: Optional[str] = Field(None, description="Modelo específico do provedor")
 
     class Config:
         json_schema_extra = {
             "example": {
                 "text": "Hemograma completo: Hemácias 4.5 milhões/mm³...",
                 "category": "laudo",
-                "document_type": "exame_sangue"
+                "document_type": "exame_sangue",
+                "provider": "claude"
             }
         }
 

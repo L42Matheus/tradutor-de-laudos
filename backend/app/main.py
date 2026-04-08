@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import auth, epidemio, history, localizacao, revisao, support, translate, usage, validate
+from app.api.routes import auth, epidemio, history, localizacao, providers, revisao, support, translate, usage, validate
 from app.config import get_settings
 from app.database import init_db
 
@@ -47,6 +47,7 @@ app.include_router(support.router, prefix="/api/v1/support", tags=["Apoio"])
 app.include_router(epidemio.router, prefix="/api/v1/epidemio", tags=["Epidemiologia"])
 app.include_router(localizacao.router, prefix="/api/v1/localizacao", tags=["Localizacao"])
 app.include_router(revisao.router, prefix="/api/v1/revisao", tags=["Revisao"])
+app.include_router(providers.router, prefix="/api/v1", tags=["Providers"])
 
 
 @app.get("/api/v1/health", tags=["Health"])

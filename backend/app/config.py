@@ -1,9 +1,10 @@
 """
 Configurações da aplicação usando pydantic-settings
 """
-from pydantic_settings import BaseSettings
 from functools import lru_cache
-from typing import Optional
+from pathlib import Path
+
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
@@ -14,9 +15,20 @@ class Settings(BaseSettings):
     app_version: str = "1.0.0"
     debug: bool = False
 
-    # Anthropic
+    # LLM Providers API Keys
     anthropic_api_key: str = ""
-    claude_model: str = "claude-sonnet-4-20250514"
+    openai_api_key: str = ""
+    google_api_key: str = ""
+    
+    # Model Defaults (atualizados abril/2026)
+    claude_model: str = "claude-sonnet-4-6"           # Claude Sonnet 4.6
+    openai_model: str = "gpt-5-preview"               # GPT-5 Preview
+    gemini_model: str = "gemini-3-flash"              # Gemini 3 Flash
+    
+    # Enabled Providers
+    enabled_providers: list[str] = ["claude", "openai", "gemini"]
+
+    # LLM General Settings
     max_tokens: int = 4000
     temperature: float = 0.3
 
@@ -44,6 +56,20 @@ class Settings(BaseSettings):
 
     # Database
     database_url: str = "sqlite:///./traduz_saude.db"
+    database_auto_migrate: bool = True
+    postgres_enable_pgvector: bool = True
+
+    # Storage & Encryption
+    storage_backend: str = "filesystem"
+    storage_root: str = str((Path(__file__).resolve().parents[1] / "storage").resolve())
+    storage_public_base_url: str = "/api/v1/storage"
+    storage_keep_legacy_base64_history: bool = False
+    encryption_key: str = "3p6v9y$B&E)H@McQfTjWmZq4t7w!z%C*F-JaNdRgUkXp2s5u8x/A?D(G+KbPeShV"
+
+    # Pipeline / RAG
+    default_pipeline_name: str = "traduz_saude"
+    default_pipeline_version: str = "v1"
+    rag_embedding_dimensions: int = 1536
 
     # K-anonimidade LGPD
     k_anonimidade_minimo: int = 5

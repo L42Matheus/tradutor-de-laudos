@@ -7,7 +7,7 @@ import secrets
 from datetime import timedelta
 from typing import Optional
 
-from fastapi import Depends, Header, HTTPException, status
+from fastapi import Cookie, Depends, Header, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -81,6 +81,8 @@ def build_user_payload(user: User) -> dict:
         "professional_registry_number": user.professional_registry_number,
         "professional_registry_state": user.professional_registry_state,
         "specialist_verification_status": user.specialist_verification_status,
+        "preferred_llm_provider": user.preferred_llm_provider or "claude",
+        "preferred_llm_model": user.preferred_llm_model,
         "research_consent": latest_consent.research_consent if latest_consent else False,
         "contact_consent": latest_consent.contact_consent if latest_consent else False,
         "created_at": serialize_brazil_datetime(user.created_at),
@@ -100,9 +102,16 @@ def _extract_bearer_token(authorization: Optional[str]) -> Optional[str]:
 
 def get_current_user_optional(
     authorization: Optional[str] = Header(None, alias="Authorization"),
+    auth_token: Optional[str] = Cookie(None),
     db: Session = Depends(get_db),
 ) -> Optional[User]:
-    token = _extract_bearer_token(authorization)
+    # Prioridade para o Cookie (mais seguro para Web)
+    token = auth_token
+    
+    # Se nao houver cookie, tenta o Header (Legado/Mobile)
+    if not token:
+        token = _extract_bearer_token(authorization)
+    
     if not token:
         return None
 
@@ -123,10 +132,11 @@ def get_current_user_optional(
 
 def get_current_user(
     authorization: Optional[str] = Header(None, alias="Authorization"),
+    auth_token: Optional[str] = Cookie(None),
     db: Session = Depends(get_db),
 ) -> User:
     """Retorna o usuario autenticado ou levanta HTTPException 401."""
-    user = get_current_user_optional(authorization, db)
+    user = get_current_user_optional(authorization, auth_token, db)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

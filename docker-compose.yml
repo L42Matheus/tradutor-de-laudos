@@ -1,6 +1,20 @@
-version: '3.8'
-
 services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: traduz_saude
+      POSTGRES_USER: traduz_saude
+      POSTGRES_PASSWORD: traduz_saude
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U traduz_saude -d traduz_saude"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
   backend:
     build:
       context: ./backend
@@ -10,9 +24,16 @@ services:
     environment:
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - DEBUG=false
+      - DATABASE_URL=postgresql+psycopg://traduz_saude:traduz_saude@postgres:5432/traduz_saude
+      - STORAGE_BACKEND=filesystem
+      - STORAGE_ROOT=/app/storage
     volumes:
       - ./backend:/app
+      - backend_storage:/app/storage
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    depends_on:
+      postgres:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
       interval: 30s
@@ -24,6 +45,8 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       target: builder
+    environment:
+      - VITE_PROXY_TARGET=http://backend:8000
     ports:
       - "5173:5173"
     volumes:
@@ -43,3 +66,7 @@ services:
   #   depends_on:
   #     - backend
   #     - frontend
+
+volumes:
+  postgres_data:
+  backend_storage:

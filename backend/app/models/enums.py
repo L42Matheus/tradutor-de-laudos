@@ -69,3 +69,23 @@ SAUDE_MENTAL_TYPE_LABELS = {
     SaudeMentalType.LAUDO_PSIQUIATRICO: "Laudo Psiquiátrico",
     SaudeMentalType.OUTROS: "Outro documento de saúde mental",
 }
+
+
+class LLMProvider(str, Enum):
+    """Provedores de LLM disponíveis"""
+    CLAUDE = "claude"
+    OPENAI = "openai"
+    GEMINI = "gemini"
+
+
+LLM_PROVIDER_LABELS = {
+    LLMProvider.CLAUDE: "Claude (Anthropic)",
+    LLMProvider.OPENAI: "GPT (OpenAI)",
+    LLMProvider.GEMINI: "Gemini (Google)",
+}
+
+LLM_PROVIDER_DESCRIPTIONS = {
+    LLMProvider.CLAUDE: "Modelo da Anthropic, excelente para análise médica detalhada",
+    LLMProvider.OPENAI: "Modelo da OpenAI, versátil e amplamente testado",
+    LLMProvider.GEMINI: "Modelo do Google, com grande contexto e multimodal",
+}

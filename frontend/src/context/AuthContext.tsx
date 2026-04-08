@@ -26,21 +26,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const bootstrap = async () => {
-      const token = localStorage.getItem('auth_token')
-      if (!token) {
-        setIsLoading(false)
-        return
-      }
-
+      // Nao verificamos mais o localStorage. 
+      // Simplesmente tentamos chamar /me para ver se o cookie e valido.
       try {
         const response = await getCurrentUser()
         if (response.success && response.data?.user) {
           setUser(response.data.user)
-        } else {
-          localStorage.removeItem('auth_token')
         }
-      } catch {
-        localStorage.removeItem('auth_token')
+      } catch (err) {
+        // Silencioso: usuario nao esta logado ou sessao expirou
+        console.debug('Sessao nao encontrada ou expirada')
       } finally {
         setIsLoading(false)
       }
@@ -53,12 +48,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setError(null)
     try {
       const response = await loginRequest(payload)
-      if (!response.success || !response.data?.token || !response.data.user) {
+      if (!response.success || !response.data?.user) {
         setError(response.error || 'Nao foi possivel entrar')
         return false
       }
 
-      localStorage.setItem('auth_token', response.data.token)
+      // O token ja foi setado como cookie HttpOnly pelo backend
       setUser(response.data.user)
       return true
     } catch (error) {
@@ -71,12 +66,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setError(null)
     try {
       const response = await registerRequest(payload)
-      if (!response.success || !response.data?.token || !response.data.user) {
+      if (!response.success || !response.data?.user) {
         setError(response.error || 'Nao foi possivel criar a conta')
         return false
       }
 
-      localStorage.setItem('auth_token', response.data.token)
+      // O token ja foi setado como cookie HttpOnly pelo backend
       setUser(response.data.user)
       return true
     } catch (error) {
@@ -89,7 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await logoutRequest()
     } finally {
-      localStorage.removeItem('auth_token')
+      // O backend ja limpou o cookie no logoutRequest()
       setUser(null)
     }
   }
