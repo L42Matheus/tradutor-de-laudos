@@ -6,11 +6,19 @@ export type SaudeMentalType = 'antidepressivo' | 'ansiolitico' | 'laudo_psiquiat
 
 export type DocumentType = LaudoType | ReceitaType | SaudeMentalType
 
+export type LLMProvider = 'claude' | 'openai' | 'gemini'
+
 // Labels para o frontend
 export const CATEGORY_LABELS: Record<DocumentCategory, string> = {
   laudo: 'Laudo/Exame',
   receita: 'Receita Médica',
   saude_mental: 'Saúde Mental',
+}
+
+export const PROVIDER_LABELS: Record<LLMProvider, string> = {
+  claude: 'Claude 3.5 Sonnet (Anthropic)',
+  openai: 'GPT-4o (OpenAI)',
+  gemini: 'Gemini 1.5 Pro (Google)',
 }
 
 export const LAUDO_TYPE_LABELS: Record<LaudoType, string> = {
@@ -39,6 +47,7 @@ export interface TranslateTextRequest {
   text: string
   category: DocumentCategory
   document_type: string
+  provider?: LLMProvider
 }
 
 export interface TranslationResult {
@@ -141,7 +150,7 @@ export type UserProfileType =
   | 'other'
 
 export type AccountType = 'patient' | 'specialist'
-export type ProfessionalRegistryType = 'CRM'
+export type ProfessionalRegistryType = 'CRM' | 'COREN' | 'CRO' | 'CRP' | 'CRF' | 'CREFITO' | 'CRN' | 'CRBM'
 export type SpecialistVerificationStatus =
   | 'not_applicable'
   | 'pending'
@@ -164,6 +173,8 @@ export interface AuthUser {
   professional_registry_number: string | null
   professional_registry_state: string | null
   specialist_verification_status: SpecialistVerificationStatus
+  preferred_llm_provider: LLMProvider
+  preferred_llm_model: string | null
   research_consent: boolean
   contact_consent: boolean
   created_at: string

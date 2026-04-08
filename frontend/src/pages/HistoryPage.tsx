@@ -8,6 +8,7 @@ import { Card } from '../components/ui/Card'
 import { Alert } from '../components/ui/Alert'
 import { Button } from '../components/ui/Button'
 import { ResultTabs } from '../components/translate/ResultTabs'
+import { SecureHistoryImage } from '../components/translate/SecureHistoryImage'
 
 interface HistoryPageProps {
   selectedHistoryId?: string | null
@@ -89,14 +90,6 @@ function getOriginalText(item: TranslationHistoryItem) {
   }
 
   return 'Conteudo original nao disponivel para este item.'
-}
-
-function getImageSrc(item: TranslationHistoryItem) {
-  if (!item.original_image_base64 || !item.original_image_media_type) {
-    return null
-  }
-
-  return `data:${item.original_image_media_type};base64,${item.original_image_base64}`
 }
 
 export function HistoryPage({ selectedHistoryId, onBackToHome }: HistoryPageProps) {
@@ -231,10 +224,11 @@ export function HistoryPage({ selectedHistoryId, onBackToHome }: HistoryPageProp
                 <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-slate-700 dark:text-slate-300">
                   {getOriginalText(selectedItem)}
                 </p>
-                {getImageSrc(selectedItem) && (
-                  <img
-                    src={getImageSrc(selectedItem)!}
-                    alt="Documento original enviado pelo paciente"
+                {selectedItem.original_image_base64 && (
+                  <SecureHistoryImage
+                    recordId={selectedItem.id}
+                    fallbackBase64={selectedItem.original_image_base64}
+                    mediaType={selectedItem.original_image_media_type}
                     className="mt-4 max-h-[520px] w-full rounded-xl border border-gray-200 object-contain dark:border-gray-700"
                   />
                 )}
