@@ -1,17 +1,24 @@
 """
 Rotas de traducao de documentos medicos
 """
-from fastapi import APIRouter, UploadFile, File, Form
+from typing import Optional
+
+from fastapi import APIRouter, UploadFile, File, Form, Depends
 
 from app.config import get_settings
+from app.database import get_db
+from app.models.db_models import User
 from app.models.enums import DocumentCategory
 from app.models.requests import TranslateTextRequest
 from app.models.responses import TranslateResponse, TranslationResult
 from app.services.anonymizer import anonymize_text
+from app.services.auth_service import get_current_user_optional
 from app.services.authorship_detector import ProfessionalAuthorshipDetector
 from app.services.file_processor import process_uploaded_file
+from app.services.history_service import generate_file_hash, register_translation_history
 from app.services.translator import MedicalTranslator
 from app.services.validator import DocumentValidator
+from sqlalchemy.orm import Session
 
 router = APIRouter()
 
@@ -58,7 +65,11 @@ def _detect_authorship_for_file(detector: ProfessionalAuthorshipDetector, file_d
 
 
 @router.post("/text", response_model=TranslateResponse)
-async def translate_text(request: TranslateTextRequest) -> TranslateResponse:
+async def translate_text(
+    request: TranslateTextRequest,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_optional),
+) -> TranslateResponse:
     """
     Traduz texto de documento medico para linguagem acessivel.
 
@@ -95,6 +106,18 @@ async def translate_text(request: TranslateTextRequest) -> TranslateResponse:
             categoria=request.category
         )
 
+        register_translation_history(
+            db=db,
+            user=current_user,
+            source="translate_text",
+            input_type="text",
+            document_category=request.category,
+            document_type=request.document_type,
+            original_text=anonymized_text,
+            result_payload=result,
+        )
+        db.commit()
+
         return TranslateResponse(
             success=True,
             data=TranslationResult(
@@ -125,7 +148,9 @@ async def translate_text(request: TranslateTextRequest) -> TranslateResponse:
 async def translate_file(
     file: UploadFile = File(..., description="Arquivo do documento (PDF ou imagem)"),
     category: DocumentCategory = Form(..., description="Categoria do documento"),
-    document_type: str = Form(..., description="Tipo especifico do documento")
+    document_type: str = Form(..., description="Tipo especifico do documento"),
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_optional),
 ) -> TranslateResponse:
     """
     Traduz arquivo de documento medico (PDF ou imagem) para linguagem acessivel.
@@ -145,6 +170,8 @@ async def translate_file(
         )
 
     try:
+        file_bytes = await file.read()
+        await file.seek(0)
         file_data = await process_uploaded_file(file)
 
         if file_data["error"]:
@@ -188,6 +215,21 @@ async def translate_file(
                 error="Tipo de arquivo nao suportado",
                 anonymized_fields=[]
             )
+
+        register_translation_history(
+            db=db,
+            user=current_user,
+            source="translate_file",
+            input_type=file_data["type"],
+            document_category=category,
+            document_type=document_type,
+            original_text=anonymized_text if file_data["type"] == "text" else None,
+            original_image_base64=file_data["content"] if file_data["type"] == "image" else None,
+            original_image_media_type=file_data["media_type"] if file_data["type"] == "image" else None,
+            result_payload=result,
+            file_hash=generate_file_hash(file_bytes),
+        )
+        db.commit()
 
         return TranslateResponse(
             success=True,

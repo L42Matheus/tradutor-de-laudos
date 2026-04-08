@@ -56,3 +56,8 @@ htmlcov/
 
 # Docker
 *.log
+
+# Banco local e artefatos de execucao
+*.db
+frontend/vite.err
+nul

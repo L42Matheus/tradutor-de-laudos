@@ -42,6 +42,12 @@ class Settings(BaseSettings):
     max_file_size_mb: int = 10
     allowed_extensions: list[str] = ["pdf", "txt", "png", "jpg", "jpeg", "gif", "webp"]
 
+    # Database
+    database_url: str = "sqlite:///./traduz_saude.db"
+
+    # K-anonimidade LGPD
+    k_anonimidade_minimo: int = 5
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
