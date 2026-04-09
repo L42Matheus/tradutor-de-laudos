@@ -1,0 +1,59 @@
+"""
+Add Gov.br and CPF verification fields to users table.
+"""
+from alembic import op
+import sqlalchemy as sa
+
+
+revision = "20260408_0003"
+down_revision = "20260408_0002"
+branch_labels = None
+depends_on = None
+
+
+def upgrade() -> None:
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    columns = {column["name"] for column in inspector.get_columns("users")}
+
+    # Adicionar campos sem constraint unique (SQLite não suporta ALTER com constraint)
+    if "cpf" not in columns:
+        op.add_column(
+            "users",
+            sa.Column("cpf", sa.String(length=11), nullable=True),
+        )
+        # Criar índice separadamente
+        op.create_index("ix_users_cpf", "users", ["cpf"], unique=True)
+
+    if "cpf_verified" not in columns:
+        op.add_column(
+            "users",
+            sa.Column(
+                "cpf_verified",
+                sa.Boolean(),
+                nullable=False,
+                server_default="0",
+            ),
+        )
+
+    if "govbr_reliability_level" not in columns:
+        op.add_column(
+            "users",
+            sa.Column("govbr_reliability_level", sa.String(length=10), nullable=True),
+        )
+
+
+def downgrade() -> None:
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    columns = {column["name"] for column in inspector.get_columns("users")}
+
+    if "govbr_reliability_level" in columns:
+        op.drop_column("users", "govbr_reliability_level")
+
+    if "cpf_verified" in columns:
+        op.drop_column("users", "cpf_verified")
+
+    if "cpf" in columns:
+        op.drop_index("ix_users_cpf", table_name="users")
+        op.drop_column("users", "cpf")

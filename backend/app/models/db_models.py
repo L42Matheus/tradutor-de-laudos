@@ -82,6 +82,15 @@ class User(Base):
     )
     preferred_llm_provider = Column(String(20), nullable=False, default="claude")
     preferred_llm_model = Column(String(50), nullable=True)
+
+    # Social Auth
+    google_id = Column(String(100), nullable=True, unique=True, index=True)
+    social_provider = Column(String(20), nullable=True) # 'google', etc.
+
+    # Password Reset
+    reset_password_token = Column(String(100), nullable=True, index=True)
+    reset_password_expires = Column(DateTime, nullable=True)
+
     is_active = Column(Boolean, nullable=False, default=True)
     created_at = Column(DateTime, default=brazil_now, nullable=False)
     updated_at = Column(DateTime, default=brazil_now, onupdate=brazil_now, nullable=False)

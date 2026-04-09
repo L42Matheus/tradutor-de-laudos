@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.sessions import SessionMiddleware
 
 from app.api.routes import auth, epidemio, history, localizacao, providers, revisao, support, translate, usage, validate
 from app.config import get_settings
@@ -31,12 +32,23 @@ app = FastAPI(
 )
 
 app.add_middleware(
+    SessionMiddleware,
+    secret_key=settings.session_secret_key or settings.encryption_key,
+    same_site="lax",
+    # OAuth local usa callback HTTP em localhost/127.0.0.1.
+    # Se a sessao for Secure nesses hosts, o state do Authlib nao volta no callback.
+    https_only=settings.frontend_url.startswith("https://"),
+)
+
+app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Middleware necessário para Google OAuth (Authlib)
 
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Auth"])
 app.include_router(history.router, prefix="/api/v1/history", tags=["Historico"])

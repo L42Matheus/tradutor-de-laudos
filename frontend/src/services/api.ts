@@ -108,6 +108,20 @@ export const logout = async (): Promise<AuthResponse> => {
   return response.data
 }
 
+// Password Reset
+export const requestPasswordReset = async (email: string): Promise<AuthResponse> => {
+  const response = await api.post('/auth/password-reset/request', { email })
+  return response.data
+}
+
+export const confirmPasswordReset = async (token: string, newPassword: string): Promise<AuthResponse> => {
+  const response = await api.post('/auth/password-reset/confirm', { 
+    token, 
+    new_password: newPassword 
+  })
+  return response.data
+}
+
 export const getMyTranslationHistory = async (limit = 20): Promise<TranslationHistoryResponse> => {
   const response = await api.get('/history/mine', {
     params: { limit },

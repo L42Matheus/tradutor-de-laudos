@@ -1,5 +1,5 @@
 """
-Configurações da aplicação usando pydantic-settings
+Configuracoes da aplicacao usando pydantic-settings.
 """
 from functools import lru_cache
 from pathlib import Path
@@ -8,10 +8,10 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    """Configurações da aplicação"""
+    """Configuracoes da aplicacao."""
 
     # API
-    app_name: str = "Traduz Saúde API"
+    app_name: str = "Traduz Saude API"
     app_version: str = "1.0.0"
     debug: bool = False
 
@@ -19,12 +19,12 @@ class Settings(BaseSettings):
     anthropic_api_key: str = ""
     openai_api_key: str = ""
     google_api_key: str = ""
-    
-    # Model Defaults (atualizados abril/2026)
-    claude_model: str = "claude-sonnet-4-6"           # Claude Sonnet 4.6
-    openai_model: str = "gpt-5-preview"               # GPT-5 Preview
-    gemini_model: str = "gemini-3-flash"              # Gemini 3 Flash
-    
+
+    # Model Defaults (abril/2026)
+    claude_model: str = "claude-sonnet-4-6"
+    openai_model: str = "gpt-5-preview"
+    gemini_model: str = "gemini-3-flash"
+
     # Enabled Providers
     enabled_providers: list[str] = ["claude", "openai", "gemini"]
 
@@ -32,12 +32,27 @@ class Settings(BaseSettings):
     max_tokens: int = 4000
     temperature: float = 0.3
 
+    # Google OAuth
+    google_client_id: str = ""
+    google_client_secret: str = ""
+
+    # Email / Notifications
+    email_from: str = "noreply@traduzsaude.com.br"
+    smtp_server: str = "smtp.gmail.com"
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+
+    # URLs
+    frontend_url: str = "http://localhost:5173"
+    session_secret_key: str = "traduz-saude-session-dev-key"
+
     # CORS
     cors_origins: list[str] = [
         "http://localhost:5173",
         "http://localhost:3000",
         "https://traduz-saude-app.up.railway.app",
-        "*"
+        "*",
     ]
 
     # Cache
@@ -71,15 +86,21 @@ class Settings(BaseSettings):
     default_pipeline_version: str = "v1"
     rag_embedding_dimensions: int = 1536
 
-    # K-anonimidade LGPD
+    # LGPD
     k_anonimidade_minimo: int = 5
+
+    # Specialist verification
+    specialist_verification_enabled: bool = False
+    specialist_auto_verify_crm: bool = True
+    specialist_require_documents: bool = False
 
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
+        extra = "ignore"
 
 
 @lru_cache()
 def get_settings() -> Settings:
-    """Retorna instância cacheada das configurações"""
+    """Retorna instancia cacheada das configuracoes."""
     return Settings()

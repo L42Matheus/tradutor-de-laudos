@@ -10,9 +10,10 @@ import {
   UserCheck,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import { requestPasswordReset } from '../services/api'
 import type { AccountType, LoginRequest, RegisterRequest, UserProfileType } from '../types/api'
 
-type AuthView = 'selection' | 'login' | 'register'
+type AuthView = 'selection' | 'login' | 'register' | 'forgot_password'
 
 const PATIENT_PROFILE_OPTIONS: { value: UserProfileType; label: string }[] = [
   { value: 'patient', label: 'Paciente' },
@@ -136,15 +137,19 @@ function FormSelect({
 }
 
 export function AuthPage() {
-  const { login, register, error } = useAuth()
+  const { login, register, error: authError } = useAuth()
   const [view, setView] = useState<AuthView>('selection')
   const [accountType, setAccountType] = useState<AccountType>('patient')
   const [loading, setLoading] = useState(false)
+  const [localMessage, setLocalMessage] = useState<string | null>(null)
+  const [localError, setLocalError] = useState<string | null>(null)
 
   const [loginForm, setLoginForm] = useState<LoginRequest>({
     email: '',
     password: '',
   })
+
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('')
 
   const [registerForm, setRegisterForm] = useState<RegisterRequest>({
     full_name: '',
@@ -187,6 +192,8 @@ export function AuthPage() {
 
   const handleBack = () => {
     setView('selection')
+    setLocalMessage(null)
+    setLocalError(null)
   }
 
   const handleLoginChange =
@@ -223,6 +230,42 @@ export function AuthPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleForgotPasswordSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setLoading(true)
+    setLocalMessage(null)
+    setLocalError(null)
+    try {
+      const response = await requestPasswordReset(forgotPasswordEmail)
+      if (response.success) {
+        setLocalMessage(response.data?.message || 'Link enviado!')
+      } else {
+        setLocalError(response.error || 'Erro ao solicitar recuperação')
+      }
+    } catch (err) {
+      setLocalError('Erro ao processar solicitação')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleGoogleLogin = () => {
+    const frontendOrigin = window.location.origin
+    const configuredApiUrl = import.meta.env.VITE_API_URL
+    const backendUrl = configuredApiUrl
+      ? new URL(configuredApiUrl)
+      : new URL(`${window.location.protocol}//${window.location.hostname}:8000`)
+
+    if (backendUrl.hostname === 'localhost' || backendUrl.hostname === '127.0.0.1') {
+      backendUrl.hostname = window.location.hostname
+    }
+
+    backendUrl.pathname = '/api/v1/auth/google/login'
+    backendUrl.searchParams.set('frontend_origin', frontendOrigin)
+
+    window.location.href = backendUrl.toString()
   }
 
   return (
@@ -301,26 +344,30 @@ export function AuthPage() {
           <div className="rounded-3xl border border-slate-100 bg-white p-8 shadow-2xl shadow-slate-200 dark:border-gray-700 dark:bg-gray-800 dark:shadow-black/30">
             <div className="mb-8">
               <h2 className="mb-2 text-3xl font-bold text-slate-800 dark:text-white">
-                {view === 'login' ? 'Bem-vindo' : 'Criar conta'}
+                {view === 'login' && 'Bem-vindo'}
+                {view === 'register' && 'Criar conta'}
+                {view === 'forgot_password' && 'Recuperar senha'}
               </h2>
               <p className="text-slate-500 dark:text-gray-400">
-                {view === 'login'
-                  ? isSpecialist
-                    ? 'Entre com suas credenciais de especialista'
-                    : 'Entre para ver seus documentos e historico'
-                  : isSpecialist
-                    ? 'Cadastre seu acesso profissional para validacao clinica'
-                    : 'Crie sua conta para traduzir documentos e acompanhar seu historico'}
+                {view === 'login' && (isSpecialist ? 'Entre como especialista' : 'Entre com sua conta')}
+                {view === 'register' && (isSpecialist ? 'Cadastre seu acesso profissional' : 'Crie sua conta gratuita')}
+                {view === 'forgot_password' && 'Enviaremos um link para o seu email'}
               </p>
             </div>
 
-            {error && (
+            {(authError || localError) && (
               <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-600 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300">
-                {error}
+                {authError || localError}
               </div>
             )}
 
-            {view === 'login' ? (
+            {localMessage && (
+              <div className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-600 dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300">
+                {localMessage}
+              </div>
+            )}
+
+            {view === 'login' && (
               <form className="space-y-6" onSubmit={handleLoginSubmit}>
                 <Field label="E-mail">
                   <FormInput
@@ -338,6 +385,7 @@ export function AuthPage() {
                   hint={
                     <button
                       type="button"
+                      onClick={() => setView('forgot_password')}
                       className={`text-xs font-semibold transition-colors ${roleTheme.linkClass}`}
                     >
                       Esqueceu a senha?
@@ -359,18 +407,36 @@ export function AuthPage() {
                   disabled={loading}
                   className={`w-full rounded-xl py-4 font-bold transition-all active:scale-[0.98] disabled:opacity-60 ${roleTheme.buttonClass} ${roleTheme.buttonHoverClass} shadow-lg ${roleTheme.buttonShadowClass}`}
                 >
-                  {loading
-                    ? 'Entrando...'
-                    : isSpecialist
-                      ? 'Entrar no Portal'
-                      : 'Acessar minha conta'}
+                  {loading ? 'Entrando...' : 'Entrar'}
                 </button>
+
+                {/* Google Login Button */}
+                {!isSpecialist && (
+                  <div className="space-y-4">
+                    <div className="relative flex items-center justify-center">
+                      <div className="w-full border-t border-slate-100 dark:border-gray-700"></div>
+                      <span className="bg-white dark:bg-gray-800 px-4 text-xs text-slate-400 dark:text-gray-500 uppercase tracking-widest font-medium">ou</span>
+                    </div>
+                    
+                    <button
+                      type="button"
+                      onClick={handleGoogleLogin}
+                      className="w-full flex items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white py-3.5 px-4 text-slate-700 font-semibold transition-all hover:bg-slate-50 active:scale-[0.98] dark:border-gray-700 dark:bg-gray-900 dark:text-white dark:hover:bg-gray-800"
+                    >
+                      <svg width="20" height="20" viewBox="0 0 48 48">
+                        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+                      </svg>
+                      Entrar com Google
+                    </button>
+                  </div>
+                )}
 
                 <div className="border-t border-slate-100 pt-8 text-center dark:border-gray-700">
                   <p className="text-sm text-slate-500 dark:text-gray-400">
-                    {isSpecialist
-                      ? 'Ainda nao e um especialista parceiro?'
-                      : 'Ainda nao tem uma conta?'}
+                    {isSpecialist ? 'Ainda nao e parceiro?' : 'Ainda nao tem uma conta?'}
                   </p>
                   <button
                     type="button"
@@ -381,7 +447,9 @@ export function AuthPage() {
                   </button>
                 </div>
               </form>
-            ) : (
+            )}
+
+            {view === 'register' && (
               <form className="space-y-5" onSubmit={handleRegisterSubmit}>
                 <Field label="Nome completo">
                   <FormInput
@@ -528,74 +596,9 @@ export function AuthPage() {
                   </Field>
                 )}
 
-                <Field label="Instituicao">
-                  <FormInput
-                    type="text"
-                    placeholder="Opcional"
-                    value={registerForm.institution}
-                    onChange={handleRegisterChange('institution')}
-                    focusClass={roleTheme.focusClass}
-                  />
-                </Field>
-
-                <div className="space-y-3 rounded-xl border border-slate-100 bg-slate-50 p-4 text-sm text-slate-600 dark:border-gray-700 dark:bg-gray-900/50 dark:text-gray-300">
-                  <label className="flex items-start gap-3">
-                    <input
-                      type="checkbox"
-                      checked={registerForm.terms_accepted}
-                      onChange={handleRegisterChange('terms_accepted')}
-                      className="mt-1"
-                    />
-                    <span>
-                      Aceito os termos de uso e reconheco que o sistema nao substitui avaliacao medica.
-                    </span>
-                  </label>
-                  <label className="flex items-start gap-3">
-                    <input
-                      type="checkbox"
-                      checked={registerForm.privacy_accepted}
-                      onChange={handleRegisterChange('privacy_accepted')}
-                      className="mt-1"
-                    />
-                    <span>
-                      Aceito a politica de privacidade e o tratamento dos dados necessarios para uso da plataforma.
-                    </span>
-                  </label>
-                  <label className="flex items-start gap-3">
-                    <input
-                      type="checkbox"
-                      checked={registerForm.research_consent}
-                      onChange={handleRegisterChange('research_consent')}
-                      className="mt-1"
-                    />
-                    <span>
-                      Autorizo o uso anonimizado dos dados para pesquisa vinculada ao projeto.
-                    </span>
-                  </label>
-                  <label className="flex items-start gap-3">
-                    <input
-                      type="checkbox"
-                      checked={registerForm.contact_consent}
-                      onChange={handleRegisterChange('contact_consent')}
-                      className="mt-1"
-                    />
-                    <span>
-                      Aceito contato futuro para estudos, validacoes e evolucao do produto.
-                    </span>
-                  </label>
-                </div>
-
-                {isSpecialist && (
-                  <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300">
-                    O acesso do especialista entra com verificacao pendente a partir do CRM, UF e especialidade informados.
-                  </div>
-                )}
-
                 <button
                   type="submit"
-                  disabled={
-                    loading || !registerForm.terms_accepted || !registerForm.privacy_accepted
-                  }
+                  disabled={loading || !registerForm.terms_accepted || !registerForm.privacy_accepted}
                   className={`w-full rounded-xl py-4 font-bold transition-all active:scale-[0.98] disabled:opacity-60 ${roleTheme.buttonClass} ${roleTheme.buttonHoverClass} shadow-lg ${roleTheme.buttonShadowClass}`}
                 >
                   {loading ? 'Criando...' : 'Criar conta'}
@@ -609,6 +612,40 @@ export function AuthPage() {
                     className={`mt-2 font-bold transition-colors ${roleTheme.linkClass}`}
                   >
                     Entrar agora
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {view === 'forgot_password' && (
+              <form className="space-y-6" onSubmit={handleForgotPasswordSubmit}>
+                <Field label="E-mail da conta">
+                  <FormInput
+                    type="email"
+                    placeholder="seu@email.com"
+                    value={forgotPasswordEmail}
+                    onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                    focusClass={roleTheme.focusClass}
+                    icon={<Mail className="h-5 w-5" />}
+                    required
+                  />
+                </Field>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className={`w-full rounded-xl py-4 font-bold transition-all active:scale-[0.98] disabled:opacity-60 ${roleTheme.buttonClass} ${roleTheme.buttonHoverClass} shadow-lg ${roleTheme.buttonShadowClass}`}
+                >
+                  {loading ? 'Enviando...' : 'Enviar link de recuperação'}
+                </button>
+
+                <div className="border-t border-slate-100 pt-6 text-center dark:border-gray-700">
+                  <button
+                    type="button"
+                    onClick={() => setView('login')}
+                    className={`font-bold transition-colors ${roleTheme.linkClass}`}
+                  >
+                    Voltar para o login
                   </button>
                 </div>
               </form>

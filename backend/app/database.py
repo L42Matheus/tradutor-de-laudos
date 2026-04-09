@@ -115,6 +115,10 @@ def _run_lightweight_migrations():
             ),
             "preferred_llm_provider": "ALTER TABLE users ADD COLUMN preferred_llm_provider VARCHAR(20) NOT NULL DEFAULT 'claude'",
             "preferred_llm_model": "ALTER TABLE users ADD COLUMN preferred_llm_model VARCHAR(50)",
+            "google_id": "ALTER TABLE users ADD COLUMN google_id VARCHAR(100)",
+            "social_provider": "ALTER TABLE users ADD COLUMN social_provider VARCHAR(20)",
+            "reset_password_token": "ALTER TABLE users ADD COLUMN reset_password_token VARCHAR(100)",
+            "reset_password_expires": "ALTER TABLE users ADD COLUMN reset_password_expires DATETIME",
         },
         "traducoes": {
             "user_id": "ALTER TABLE traducoes ADD COLUMN user_id VARCHAR(36)",

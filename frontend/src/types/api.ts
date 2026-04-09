@@ -184,6 +184,7 @@ export interface AuthPayload {
   token?: string
   user?: AuthUser
   logged_out?: boolean
+  message?: string
 }
 
 export interface AuthResponse {
