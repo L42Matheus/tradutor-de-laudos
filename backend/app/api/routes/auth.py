@@ -45,6 +45,17 @@ def _resolve_frontend_url(request: Request) -> str:
     return settings.frontend_url.rstrip("/")
 
 
+def _should_use_secure_cookie(request: Request) -> bool:
+    forwarded_proto = (request.headers.get("x-forwarded-proto") or "").lower()
+    if forwarded_proto:
+        return forwarded_proto == "https"
+
+    if request.url.scheme:
+        return request.url.scheme.lower() == "https"
+
+    return settings.frontend_url.startswith("https://")
+
+
 class RegisterRequest(BaseModel):
     full_name: str = Field(..., min_length=3, max_length=150)
     email: str = Field(..., min_length=5, max_length=255)
@@ -139,8 +150,9 @@ def _normalizar_registro_numero(value: Optional[str]) -> Optional[str]:
     return cleaned or None
 
 
-def _set_auth_cookie(response: Response, token: str):
+def _set_auth_cookie(response: Response, request: Request, token: str):
     """Configura o cookie HttpOnly de autenticacao."""
+    use_secure_cookie = _should_use_secure_cookie(request)
     response.set_cookie(
         key="auth_token",
         value=token,
@@ -148,7 +160,7 @@ def _set_auth_cookie(response: Response, token: str):
         max_age=30 * 24 * 60 * 60,  # 30 dias
         expires=30 * 24 * 60 * 60,
         samesite="lax",
-        secure=False, # Importante False para localhost HTTP
+        secure=use_secure_cookie,
     )
 
 
@@ -156,6 +168,7 @@ def _set_auth_cookie(response: Response, token: str):
 async def register(
     request: RegisterRequest, 
     response: Response,
+    http_request: Request,
     db: Session = Depends(get_db)
 ) -> AuthEnvelope:
     if not request.terms_accepted or not request.privacy_accepted:
@@ -242,7 +255,7 @@ async def register(
     db.commit()
     db.refresh(user)
 
-    _set_auth_cookie(response, token)
+    _set_auth_cookie(response, http_request, token)
     return AuthEnvelope(success=True, data=_build_auth_response(user, token))
 
 
@@ -250,6 +263,7 @@ async def register(
 async def login(
     request: LoginRequest, 
     response: Response,
+    http_request: Request,
     db: Session = Depends(get_db)
 ) -> AuthEnvelope:
     if not _is_valid_email(request.email):
@@ -266,7 +280,7 @@ async def login(
     db.commit()
     db.refresh(user)
 
-    _set_auth_cookie(response, token)
+    _set_auth_cookie(response, http_request, token)
     return AuthEnvelope(success=True, data=_build_auth_response(user, token))
 
 
@@ -280,6 +294,7 @@ async def me(current_user: Optional[User] = Depends(get_current_user_optional)) 
 
 @router.post("/logout", response_model=AuthEnvelope)
 async def logout(
+    request: Request,
     response: Response,
     authorization: Optional[str] = Header(None, alias="Authorization"),
     auth_token: Optional[str] = Cookie(None),
@@ -291,7 +306,12 @@ async def logout(
         revoke_session(db, token_to_revoke)
         db.commit()
 
-    response.delete_cookie(key="auth_token", samesite="lax", httponly=True)
+    response.delete_cookie(
+        key="auth_token",
+        samesite="lax",
+        httponly=True,
+        secure=_should_use_secure_cookie(request),
+    )
     return AuthEnvelope(success=True, data={"logged_out": True})
 
 
@@ -319,7 +339,7 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
         return RedirectResponse(url=f"{frontend_url}/login?error=google_auth_failed")
 
     response = RedirectResponse(url=f"{frontend_url}/")
-    _set_auth_cookie(response, token)
+    _set_auth_cookie(response, request, token)
     return response
 
 

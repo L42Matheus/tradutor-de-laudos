@@ -4,6 +4,7 @@ Configuracoes da aplicacao usando pydantic-settings.
 from functools import lru_cache
 from pathlib import Path
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -51,8 +52,6 @@ class Settings(BaseSettings):
     cors_origins: list[str] = [
         "http://localhost:5173",
         "http://localhost:3000",
-        "https://traduz-saude-app.up.railway.app",
-        "*",
     ]
 
     # Cache
@@ -93,6 +92,25 @@ class Settings(BaseSettings):
     specialist_verification_enabled: bool = False
     specialist_auto_verify_crm: bool = True
     specialist_require_documents: bool = False
+
+    @field_validator("cors_origins", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, value: str | list[str]) -> list[str]:
+        if isinstance(value, list):
+            return [item.strip() for item in value if isinstance(item, str) and item.strip()]
+
+        if isinstance(value, str):
+            raw = value.strip()
+            if not raw:
+                return []
+            if raw.startswith("["):
+                import json
+
+                parsed = json.loads(raw)
+                return [item.strip() for item in parsed if isinstance(item, str) and item.strip()]
+            return [item.strip() for item in raw.split(",") if item.strip()]
+
+        return value
 
     class Config:
         env_file = ".env"
