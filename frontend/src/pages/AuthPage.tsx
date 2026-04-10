@@ -596,6 +596,39 @@ export function AuthPage() {
                   </Field>
                 )}
 
+                {/* Termos e Privacidade */}
+                <div className="space-y-3 pt-2">
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={registerForm.terms_accepted}
+                      onChange={handleRegisterChange('terms_accepted')}
+                      className="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900"
+                    />
+                    <span className="text-sm text-slate-600 dark:text-gray-400">
+                      Li e aceito os{' '}
+                      <a href="/termos" target="_blank" className={`font-semibold ${roleTheme.linkClass}`}>
+                        Termos de Uso
+                      </a>
+                    </span>
+                  </label>
+
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={registerForm.privacy_accepted}
+                      onChange={handleRegisterChange('privacy_accepted')}
+                      className="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900"
+                    />
+                    <span className="text-sm text-slate-600 dark:text-gray-400">
+                      Li e aceito a{' '}
+                      <a href="/privacidade" target="_blank" className={`font-semibold ${roleTheme.linkClass}`}>
+                        Politica de Privacidade
+                      </a>
+                    </span>
+                  </label>
+                </div>
+
                 <button
                   type="submit"
                   disabled={loading || !registerForm.terms_accepted || !registerForm.privacy_accepted}
