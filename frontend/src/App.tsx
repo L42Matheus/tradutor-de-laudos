@@ -7,6 +7,8 @@ import { HistoryPage } from './pages/HistoryPage'
 import { HomePage } from './pages/HomePage'
 import { SpecialistPage } from './pages/SpecialistPage'
 import { ResetPasswordPage } from './pages/ResetPasswordPage'
+import { TermosPage } from './pages/TermosPage'
+import { PrivacidadePage } from './pages/PrivacidadePage'
 
 import { useState } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
@@ -48,8 +50,10 @@ function App() {
 
         <main className="flex-1 p-2 sm:p-4 md:p-6 lg:p-8">
           <Routes>
-            {/* Rota pública de recuperação de senha */}
+            {/* Rotas públicas */}
             <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/termos" element={<TermosPage />} />
+            <Route path="/privacidade" element={<PrivacidadePage />} />
 
             {/* Rota principal com lógica de autenticação */}
             <Route
