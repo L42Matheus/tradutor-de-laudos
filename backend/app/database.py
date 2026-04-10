@@ -14,9 +14,29 @@ from app.config import get_settings
 
 settings = get_settings()
 
+
+def _normalize_database_url(url: str) -> str:
+    """
+    Normaliza a URL do banco de dados para funcionar com psycopg.
+    Railway fornece postgresql:// mas precisamos de postgresql+psycopg://
+    """
+    if not url:
+        return "sqlite:///./traduz_saude.db"
+
+    # Railway usa postgresql:// mas SQLAlchemy 2.0 com psycopg3 precisa de postgresql+psycopg://
+    if url.startswith("postgresql://"):
+        url = url.replace("postgresql://", "postgresql+psycopg://", 1)
+    elif url.startswith("postgres://"):
+        url = url.replace("postgres://", "postgresql+psycopg://", 1)
+
+    return url
+
+
+_db_url = _normalize_database_url(settings.database_url)
+
 engine = create_engine(
-    settings.database_url,
-    connect_args={"check_same_thread": False} if "sqlite" in settings.database_url else {},
+    _db_url,
+    connect_args={"check_same_thread": False} if "sqlite" in _db_url else {},
     echo=settings.debug,
 )
 
@@ -26,11 +46,11 @@ Base = declarative_base()
 
 
 def is_sqlite_url(database_url: str | None = None) -> bool:
-    return "sqlite" in (database_url or settings.database_url)
+    return "sqlite" in (database_url or _db_url)
 
 
 def is_postgres_url(database_url: str | None = None) -> bool:
-    target = (database_url or settings.database_url).lower()
+    target = (database_url or _db_url).lower()
     return target.startswith("postgresql") or target.startswith("postgres")
 
 
