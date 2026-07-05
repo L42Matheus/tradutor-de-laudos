@@ -47,7 +47,7 @@ IMAGE_MIME_TYPES = {
 }
 
 # Modelo Claude utilizado
-CLAUDE_MODEL = "claude-sonnet-4-20250514"
+CLAUDE_MODEL = "claude-sonnet-4-5"
 
 # Configuracoes de requisicao
 MAX_TOKENS = 4000
